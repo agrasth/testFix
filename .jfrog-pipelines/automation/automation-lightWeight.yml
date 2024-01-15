@@ -2,1640 +2,6 @@ template: true
 valuesFilePath: ../values.yml
 
 pipelines:
-  - name: custom_trigger_automation
-    configuration:
-      integrations:
-        - name: automation_ssh
-        - name: s_gitHub
-        - name: entArt
-      inputResources:
-        - name: ubuntu_20_static_vm
-          trigger: false
-        - name: redhat_7_static_vm
-          trigger: false
-        - name: centos_7_static_vm
-          trigger: false
-      environmentVariables:
-        readOnly:
-          DEFAULT_UBUNTU_NODEPOOL_OS:
-            allowCustom: true
-            default: "Ubuntu_20.04"
-            description: "Default operating system for node pool tests"
-          DEFAULT_NODEPOOL_NUMBEROFNODES:
-            allowCustom: true
-            default: 1
-            description: "Default number of nodes for node pool tests"
-          DEFAULT_NODEPOOL_REGION:
-            allowCustom: true
-            default: "ap-south-1"
-            description: "Default region for node pool tests"
-          DEFAULT_AZURE_NODEPOOL_REGION:
-            allowCustom: true
-            default: "westus"
-            description: "Default region for azure node pool tests"
-          DEFAULT_GCP_NODEPOOL_REGION:
-            allowCustom: true
-            default: "us-west1"
-            description: "Default region for gcp node pool tests"
-          DEFAULT_NODEPOOL_ARCHITECTURE:
-            allowCustom: true
-            default: "x86_64"
-            description: "Default architecture for node pool tests"
-          DEFAULT_NODEPOOL_NODEIDLEINTERVAL:
-            allowCustom: true
-            default: 1
-            description: "Default node interval(in min) for node pool tests"
-          DEFAULT_NODEPOOL_DISKSIZE:
-            allowCustom: true
-            default: 90
-            description: "Default disk size for node pool tests"
-          DEFAULT_NODEPOOL_TIMEOUT:
-            allowCustom: true
-            default: 30000
-            description: "Default timeout(in sec) for node pool tests"
-          DEFAULT_WINDOWS_NODEPOOL_OS:
-            allowCustom: true
-            default: "WindowsServer_2019"
-          AWS_NODEPOOL_KEYPAIRNAME:
-            description: "AWS key-pair"
-            default: "dev2cloud-pp-aps1-nodepool"
-            allowCustom: true
-          AWS_NODEPOOL_SECOND_KEYPAIRNAME:
-            description: "AWS second key-pair"
-            default: "pipetesting003-eu-central-1"
-            allowCustom: true
-          AWS_NODEPOOL_SUBNETID:
-            description: "Default AWS subnet-id"
-            default: "subnet-0cdfebd1890e2967a"
-            allowCustom: true
-          AWS_NODEPOOL_SECOND_SUBNETID:
-            description: "second AWS subnet-id"
-            default: "subnet-050a07ea2f5cbee1c"
-            allowCustom: true
-          AWS_NODEPOOL_INSTANCESIZE:
-            description: "Default AWS instance-size"
-            default: "t3a.medium"
-            allowCustom: true
-          AWS_NODEPOOL_WIN_19_INSTANCESIZE:
-            description: "Default AWS instance-size"
-            default: "t3a.medium"
-            allowCustom: true
-          AWS_NODEPOOL_SECURITYGROUPID:
-            description: " Default AWS security group-id"
-            default: "sg-04d78bcf2e81c95a0"
-            allowCustom: true
-          AWS_NODEPOOL_SECOND_SECURITYGROUPID:
-            description: " second AWS security group-id"
-            default: "sg-0ea095851df05843e"
-            allowCustom: true
-          AWS_PROJECT_INTEGRATION_ACCESSKEYID:
-            description: "Default AWS access key-id"
-            default: "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}"
-            values:
-              - "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}"
-              - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_ACCESSKEYID}"
-            allowCustom: true
-          AWS_PROJECT_INTEGRATION_SECRETACCESSKEY:
-            description: "Default AWS ecret access-key"
-            default: "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
-            values:
-              - "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
-              - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_SECRETACCESSKEY}"
-            allowCustom: true
-          D_AZUREKEYS_PROJECT_INTEGRATION_APPID:
-            description: "Default Azure app-id"
-            default: "192757c5-73a6-4257-84ec-1fe4c30f98fb"
-            allowCustom: true
-          D_AZUREKEYS_PROJECT_INTEGRATION_PASSWORD:
-            description: "Default Azure password"
-            default: "${int_az_jfrog_password}"
-            allowCustom: true
-          D_AZUREKEYS_PROJECT_INTEGRATION_TENANT:
-            description: "Default Azure tenant key"
-            default: "ad8b5a8c-9862-4c41-a341-aa838fc564df"
-            allowCustom: true
-          AZURE_NODEPOOL_SUBSCRIPTIONID:
-            allowCustom: true
-            default: "f27d81be-eea4-479e-a745-11088b8cc1b0"
-            description: "Default Azure subscription-id"
-          AZURE_NODEPOOL_RESOURCEGROUPNAME:
-            allowCustom: true
-            default: "pipelines-bp-westus"
-            description: "Default Azure resource group name"
-          AZURE_NODEPOOL_VNETNAME:
-            allowCustom: true
-            default: "pipelines-bp-westus"
-            description: "Default Azure vnetname"
-          AZURE_NODEPOOL_SUBNETNAME:
-            allowCustom: true
-            default: "pipelines-bp-westus"
-            description: "Default Azure subnet name"
-          AZURE_NODEPOOL_PUBLICSSHKEY:
-            allowCustom: true
-            default: "\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCA0GPIdWfyEn21jkMhS8/JvoJ4viuPmnBhuazjwUbilM3zO38hQc8nr8eW0zJS/zpf2V9QewpJ1t9x5tw4bdTRMN99aaIbqr6ZSz/1ofFL1PkpC9Y7HWi+dmpxlIqRkX6JGPaUNb2ql71vVPY0tLg2G4MgcX/ZFQCVO3z/o20HURgrcxYEu5A3+dOkyiE3JQBi+s66cgDm7p3IIND2eEHcZiIsaW6vg2T85oF8WkXcpHFLLXt5gzND6f/8TwW657QXe2P5mijWwTtCOaopfSK0vXC1dFzPPpwKGPTv7KrsTSPL3c/QP6YqEYratKpNTenmvGPGqYNFgj8oMIbVN2SP\""
-            description: "Default Azure public ssh-key"
-          AZURE_NODEPOOL_INSTANCESIZE:
-            allowCustom: true
-            default: "Standard_F2s"
-            description: "Default Azure instance size"
-          GCP_NODEPOOL_INSTANCESIZE:
-            allowCustom: true
-            default: "n1-standard-2"
-            description: "This variable is used to set default instance size for azure node pool"
-          GCP_NODEPOOL_SUBNET:
-            allowCustom: true
-            default: "jfrog-usw1-dynamicnodes"
-            description: "This variable is used to set default instance size for azure node pool"
-          GCP_NODEPOOL_NETWORK_TAGS:
-            allowCustom: true
-            default: "behind-nat,jenkins,pipelines,xray-app,xray-apps"
-            description: "This variable is used to set default instance size for azure node pool"
-          GCP_NODEPOOL_ZONE:
-            allowCustom: true
-            default: "us-west1-b"
-            description: "This variable is used to set default instance size for azure node pool"
-          D_GOOGLECLOUD_PROJECT_INTEGRATION_JSONKEY:
-            allowCustom: true
-            default: "${int_test_automation_gcp_jsonKey}"
-            description: "This variable is used to set default instance size for azure node pool"
-          KUBERNETES_NODEPOOL_STORAGECLASS:
-            allowCustom: true
-            default: "standard"
-            description: "This variable is used to set default storage class for kubernetes node pool"
-          KUBERNETES_NODEPOOL_NAMESPACE:
-            allowCustom: true
-            default: "pipe-master-pool"
-            description: "This variable is used to set default namespace for kubernetes node pool"
-          KUBERNETES_PROJECT_INTEGRATION_KUBECONFIG:
-            allowCustom: true
-            default: "${int_KubeFile_automation_kubeconfig}"
-            description: "This variable is used to set default kubeconfig for kubernetes node pool"
-          KUBERNETES_PROJECT_INTEGRATION_KUBECONFIG_PATH:
-            allowCustom: true
-            default: "${step_workspace_dir}/KubeFile_automation/config"
-            description: "This variable is used to set default kubeconfig for kubernetes node pool"
-          DONT_DELETE_PS:
-            description: "When run status reaches error status, pipeline source doesn't get deleted "
-            default: "false"
-            allowCustom: true
-          GREP:
-            description: "Only run tests matching this string"
-            default: ""
-            allowCustom: true
-          INVERT:
-            description: "Skip all the tests matching the grep string. Accepts only true or false"
-            default: "false"
-            allowCustom: true
-          PREP_FOR_HELM_TESTS:
-            description: "Upload helm test files to artifactory for running helm test cases"
-            default: "false"
-            allowCustom: true
-          U20_STATIC_IP_ADDRESS:
-            allowCustom: false
-            default:  "${res_ubuntu_20_static_vm_ip_address}"
-            description: "Ubuntu 20 static vm ip address"
-          RHEL7_STATIC_IP_ADDRESS:
-            allowCustom: false
-            default:  "${res_redhat_7_static_vm_ip_address}"
-            description: "Redhat 7 static vm ip address"
-          CENT7_STATIC_IP_ADDRESS:
-            allowCustom: false
-            default:  "${res_centos_7_static_vm_ip_address}"
-            description: "CentOS 7 static vm ip address"
-          SSH_USER:
-            allowCustom: false
-            default:  "automation"
-            description: "SSH user name in automation"
-          SSH_PRIVATE_KEY:
-            allowCustom: false
-            default:  "${int_automation_ssh_privateKey}"
-            description: "SSH private key value in automation"
-          GITHUB_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "PIPA/Org_test_Automation_Webhooks"
-            description: "GitHub webhook test repository"
-          BITBUCKET_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "jfbeta/org_test_automation_webhooks"
-            description: "Bitbucket webhook test repository"
-          BITBUCKETSERVERBASIC_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "PIP/tests"
-            description: "BitbucketServerBasic webhook test repository"
-          GITLAB_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "jfbeta/webhooks"
-            description: "GitLab webhook test repository"
-          PIPELINES_SERVICE_USER_TOKEN:
-            allowCustom: true
-            default: "Testing1234"
-            description: Service User Token
-          DEPLOY_KEYS_REPOSITORY_FULL_NAME:
-            allowCustom: true
-            default: "PIPA/org_test_automation_deploy_keys"
-            description: 'deploy keys automation github repository'
-          BITBUCKET_SERVER_PASSWORD:
-            description: "BBS password"
-            default: "${int_test_automation_bbs_new_password}"
-            allowCustom: true
-          BITBUCKET_SERVER_URL:
-            description: "BBS url"
-            default: "${int_test_automation_bbs_new_url}"
-            allowCustom: true
-          BITBUCKET_SERVER_TOKEN:
-            description: "BBS token"
-            default: "${int_automation_bbs_aps_BITBUCKET_SERVER_TOKEN}"
-            allowCustom: true
-          BITBUCKET_SERVER_USERNAME:
-            description: "BBS username"
-            default: "${int_test_automation_bbs_new_username}"
-            allowCustom: true
-          AWS_NODEPOOL_CUSTOMTAG_KEYS:
-            description: "keys for custom tag to identify testing instances"
-            default: "pipelines-internal,Group"
-            allowCustom: true
-          AWS_NODEPOOL_CUSTOMTAG_VALUES:
-            description: "values for custom tag to identify testing instances"
-            default: "testing,PIPELINES"
-            allowCustom: true
-          ENTPLUS_ARTIFACTORY_INTEGRATION_USER:
-            description: "values for custom tag to identify testing instances"
-            default: "${int_entArt_user}"
-            allowCustom: true
-          ENTPLUS_ARTIFACTORY_INTEGRATION_URL:
-            description: "values for custom tag to identify testing instances"
-            default: "${int_entArt_url}"
-            allowCustom: true
-          ENTPLUS_ARTIFACTORY_INTEGRATION_APIKEY:
-            description: "values for custom tag to identify testing instances"
-            default: "${int_entArt_apikey}"
-            allowCustom: true
-          GITHUB_REPOSITORY_BRANCH: "master"
-          GITHUB_REPOSITORY_FULLPATH_BASH: "jfrog/Org_test_Automation_bash"
-          GITHUB_REPOSITORY_FULLPATH_POWERSHELL: "jfrog/Org_test_Automation_PowerShell"
-          MULTIBRANCH_REPOSITORY_FULL_NAME: "PIPA/org_test_automation_MultiBranch"
-          GITHUB_REPOSITORY_FULLPATH_BASH_BRANCH: "master"
-          EMPTY_REPOSITORY_FULL_NAME : "PIPA/Org_test_Automation_empty"
-          EXTENSIONS_REPOSITORY_FULL_NAME : "PIPA/extensions"
-          TEMPLATES_REPOSITORY_FULL_NAME : "PIPA/templates"
-          GITHUB_REPOSITORY_FULLPATH: "jfrog/Org_test_Automation"
-          GITHUB_MULTIBRANCH_REPOSITORY_FULL_NAME: "jfrog/org_test_automation_MultiBranch"
-          REPOSITORY_SANITY_PIPELINE_FULL_NAME: "PIPA/sanity_pipeline"
-    steps:
-      - name: custom_trigger_automation
-        type: Bash
-        configuration:
-          timeoutSeconds: 10800
-          chronological: true
-          inputResources:
-            - name: triggerLightWeightAutomation
-              trigger: false
-            - name: auto_gitRepo
-              trigger: false
-            - name: Org_test_Automation_BBS
-              trigger: false
-            - name: Org_test_Automation_bash_BBS
-              trigger: false
-            - name: Org_test_Automation_PowerShell_BBS
-              trigger: false
-            - name: Org_test_Automation_Private_BBS
-              trigger: false
-            - name: org_test_automation_MultiBranch_BBS
-              trigger: false
-            - name: automation_templateFS_master
-              trigger: false
-          environmentVariables:
-            SKIP_NPM_INSTALL:
-              allowCustom: true
-              default: "true"
-              description: "Flag to skip npm install"
-            jpd_url:
-              allowCustom: true
-              default: ""
-              description: Test instance's server name. If no server name is specified, the value will be fetched from triggerLightWeightAutomation pipeline's resource
-            removeConfFile: "false"
-            confFileName: conf.json
-            LOG_LEVEL: "info"
-            JFROG_ARTIFACTORY_USER:
-              allowCustom: true
-              default:  admin
-              description: "Admin username of the test instance"
-            JFROG_ADMIN_ARTIFACTORY_PASSWORD:
-              allowCustom: true
-              default: "Password@1"
-              description: Password of the test instance
-            JFROG_ARTIFACTORY_APIKEY:
-              allowCustom: true
-              default: "Password@1"
-              description: API key of the test instance
-            GITHUB_TOKEN:
-              allowCustom: true
-              default:  "${int_s_gitHub_token}"
-              description: "Github access token"
-            GITHUB_URL:
-              allowCustom: true
-              default: "${int_test_automation_token_GITHUB_URL}"
-              description: "Github url path"
-            DEFAULT_NODE_POOL_NAME:
-              allowCustom: true
-              default: u20dynamic
-              description: "Default nodePool"
-            listOfTests:
-              allowCustom: true
-              default: "core/api/systemCodes.js"
-              description: Comma seperated test suits for execution
-            repositoryFullName:
-              allowCustom: true
-              default: "PIPA/Org_test_Automation"
-              description: "Github repository"
-            repositoryBranch:
-              allowCustom: true
-              default: "master"
-              description: "Github repository branch"
-            awsProjectIntegrationAccessKeyId:
-              allowCustom: true
-              default: ${int_lightweight_automation_generic_AWS_PROJECT_INTEGRATION_ACCESSKEYID}
-              description: "Default AWS access key"
-            awsProjectIntegrationSecretAccessKey:
-              allowCustom: true
-              default: ${int_lightweight_automation_generic_AWS_PROJECT_INTEGRATION_SECRETACCESSKEY}
-              description: " Default AWS access secret"
-            JOIN_KEY:
-              allowCustom: true
-              default: ""
-              description: Join key of the test instance
-          integrations:
-            - name: test_automation
-            - name: test_automation_token
-            - name: KubeFile_automation
-            - name: entplus_deployer
-            - name: lightweight_automation_generic
-            - name: az_jfrog_new
-            - name: test_automation_gcp
-            - name: test_automation_bbs_new
-            - name: automation_bbs_aps
-          nodePool: pipelines_testing
-
-        execution:
-          onStart:
-            - testPath=$res_auto_gitRepo_resourcePath/automation/tests
-            - pushd $testPath
-            - mkdir -p /tmp/npm_cache
-            - restore_pipeline_files npm_cache /tmp/npm_cache/
-            - npm config set registry https://entplus.jfrog.io/artifactory/api/npm/npm-virtual
-            - curl -u"${int_entplus_deployer_user}":"${int_entplus_deployer_apikey}" "https://entplus.jfrog.io/api/npm/auth" >> ~/.npmrc
-            - npm config fix
-            - npm ci
-            - add_pipeline_files /tmp/npm_cache npm_cache
-            - restore_pipeline_files jsonfile $confFileName
-            - if [[ -f "$confFileName" ]]; then cat $confFileName; fi
-            - |
-              if [ -z "$jpd_url" ]; then
-                if [ -z "${res_triggerLightWeightAutomation_jpdUrl}" ]; then
-                  echo "server name is missing please custom  trigger this step by providing servername"
-                  exit 1
-                else
-                  export JPD_URL=${res_triggerLightWeightAutomation_jpdUrl}
-                fi
-              else
-                export JPD_URL=${jpd_url}
-              fi
-            - export testCases=${listOfTests}
-            - echo "Test files considered for this run -> "$testCases
-            - export JFROG_JOIN_KEY=${res_triggerLightWeightAutomation_joinKey}
-            - |
-              if [ -z "${JOIN_KEY}" ]; then
-                if [ -z "${res_triggerLightWeightAutomation_joinKey}" ]; then
-                  echo "join key is missing please custom trigger this step by providing join key"
-                  exit 1
-                else
-                  export JFROG_JOIN_KEY=${res_triggerLightWeightAutomation_joinKey}
-                fi
-              else
-                export JFROG_JOIN_KEY="${JOIN_KEY}"
-              fi
-            - export REPOSITORY_FULL_NAME=${repositoryFullName}
-            - export REPOSITORY_BRANCH=${repositoryBranch}
-            - export ORG_TEST_AUTOMATION_DIRECTORY="${res_Org_test_Automation_BBS_resourcePath}"
-            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="${res_Org_test_Automation_bash_BBS_resourcePath}"
-            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="${res_Org_test_Automation_PowerShell_BBS_resourcePath}"
-            - export ORG_TEST_AUTOMATION_PRIVATE_DIRECTORY="${res_Org_test_Automation_Private_BBS_resourcePath}"
-            - export ORG_TEST_AUTOMATION_MULTIBRANCH_DIRECTORY="${res_org_test_automation_MultiBranch_BBS_resourcePath}"
-            - templateFileName="$(ls ${res_automation_templateFS_master_resourcePath} | grep pipelines-template)"
-            - chmod +x ${res_automation_templateFS_master_resourcePath}/${templateFileName}
-            - export TEMPLATE_BINARY_PATH="${res_automation_templateFS_master_resourcePath}/${templateFileName}"
-            - chmod +x $TEMPLATE_BINARY_PATH
-            - export testCases=$listOfTests
-            - ./test.sh
-          onComplete:
-            - add_pipeline_files $confFileName jsonfile
-            - cat $confFileName
-            - save_tests testResults/mocha-junit-reporter
-            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
-{{ if not (hasPrefix "preRelease" "{{gitBranch}}") }}
-  - name: mqtest
-    configuration:
-      runtime:
-        type: image
-        image:
-          auto:
-            language: node
-            versions:
-              - "16.10.0"
-      nodePool: pipelines_testing
-      chronological: true
-      inputResources:
-        - name: ubuntu_20_static_vm
-          trigger: false
-        - name: redhat_7_static_vm
-          trigger: false
-        - name: centos_7_static_vm
-          trigger: false
-      environmentVariables:
-        readOnly:
-          #set this env to true to delete the conf.json file
-          removeConfFile: "false"
-          confFileName: conf.json
-          exitCode: "1"
-          LOG_LEVEL: "info"
-          JFROG_ARTIFACTORY_USER:
-            allowCustom: true
-            default: "${int_test_automation_token_JFROG_ARTIFACTORY_USER_lightWeight}"
-            description: "Username of the instance against which you want to trigger smoke test suite"
-          JFROG_ADMIN_ARTIFACTORY_PASSWORD:
-            allowCustom: true
-            default: "Password@1"
-            description: "Password of the instance against which you want to trigger smoke test suite"
-          JFROG_ARTIFACTORY_APIKEY:
-            allowCustom: true
-            default: "Password@1"
-            description: "Add password of the instance against which you want to trigger smoke test suite"
-          GITHUB_TOKEN:
-            allowCustom: true
-            default: "${int_s_gitHub_token}"
-            description: "GitHub token for the test automation yaml repository"
-          GITHUB_URL: "${int_test_automation_token_GITHUB_URL}"
-          gitUser: "PIPA"
-          DEFAULT_UBUNTU_NODEPOOL_OS:
-            allowCustom: true
-            default: "Ubuntu_20.04"
-            description: "Default operating system for node pool tests"
-          DEFAULT_NODEPOOL_NUMBEROFNODES:
-            allowCustom: true
-            default: 2
-            description: "Default number of nodes for node pool tests"
-          DEFAULT_NODEPOOL_REGION:
-            allowCustom: true
-            default: "ap-south-1"
-            description: "Default region for node pool tests"
-          DEFAULT_AZURE_NODEPOOL_REGION:
-            allowCustom: true
-            default: "westus"
-            description: "Default region for azure node pool tests"
-          DEFAULT_GCP_NODEPOOL_REGION:
-            allowCustom: true
-            default: "us-west1"
-            description: "Default region for gcp node pool tests"
-          DEFAULT_NODEPOOL_ARCHITECTURE:
-            allowCustom: true
-            default: "x86_64"
-            description: "Default architecture for node pool tests"
-          DEFAULT_NODEPOOL_NODEIDLEINTERVAL:
-            allowCustom: true
-            default: 1
-            description: "Default node interval(in min) for node pool tests"
-          DEFAULT_NODEPOOL_DISKSIZE:
-            allowCustom: true
-            default: 90
-            description: "Default disk size for node pool tests"
-          DEFAULT_NODEPOOL_TIMEOUT:
-            allowCustom: true
-            default: 30000
-            description: "Default timeout(in sec) for node pool tests"
-          DEFAULT_WINDOWS_NODEPOOL_OS:
-            allowCustom: true
-            default: "WindowsServer_2019"
-          AWS_NODEPOOL_KEYPAIRNAME:
-            description: "AWS key-pair"
-            default: "dev2cloud-pp-aps1-nodepool"
-            allowCustom: true
-          AWS_NODEPOOL_SECOND_KEYPAIRNAME:
-            description: "AWS second key-pair"
-            default: "pipetesting003-eu-central-1"
-            allowCustom: true
-          AWS_NODEPOOL_SUBNETID:
-            description: "Default AWS subnet-id"
-            default: "subnet-0cdfebd1890e2967a"
-            allowCustom: true
-          AWS_NODEPOOL_SECOND_SUBNETID:
-            description: "second AWS subnet-id"
-            default: "subnet-050a07ea2f5cbee1c"
-            allowCustom: true
-          AWS_NODEPOOL_INSTANCESIZE:
-            description: "Default AWS instance-size"
-            default: "t3a.medium"
-            allowCustom: true
-          AWS_NODEPOOL_WIN_19_INSTANCESIZE:
-            description: "Default AWS instance-size"
-            default: "t3a.medium"
-            allowCustom: true
-          AWS_NODEPOOL_SECURITYGROUPID:
-            description: " Default AWS security group-id"
-            default: "sg-04d78bcf2e81c95a0"
-            allowCustom: true
-          AWS_NODEPOOL_SECOND_SECURITYGROUPID:
-            description: " second AWS security group-id"
-            default: "sg-0ea095851df05843e"
-            allowCustom: true
-          AWS_NODEPOOL_CUSTOMTAG_KEYS:
-            description: "keys for custom tag to identify testing instances"
-            default: "pipelines-internal,Group"
-            allowCustom: true
-          AWS_NODEPOOL_CUSTOMTAG_VALUES:
-            description: "values for custom tag to identify testing instances"
-            default: "testing,PIPELINES"
-            allowCustom: true
-          AWS_PROJECT_INTEGRATION_ACCESSKEYID:
-            description: "Default AWS access key-id"
-            default: "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}"
-            values:
-              - "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}"
-              - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_ACCESSKEYID}"
-            allowCustom: true
-          AWS_PROJECT_INTEGRATION_SECRETACCESSKEY:
-            description: "Default AWS ecret access-key"
-            default: "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
-            values:
-              - "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
-              - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_SECRETACCESSKEY}"
-            allowCustom: true
-          D_AZUREKEYS_PROJECT_INTEGRATION_APPID:
-            description: "Default Azure app-id"
-            default: "192757c5-73a6-4257-84ec-1fe4c30f98fb"
-            allowCustom: true
-          D_AZUREKEYS_PROJECT_INTEGRATION_PASSWORD:
-            description: "Default Azure password"
-            default: "${int_az_jfrog_new_password}"
-            allowCustom: true
-          D_AZUREKEYS_PROJECT_INTEGRATION_TENANT:
-            description: "Default Azure tenant key"
-            default: "ad8b5a8c-9862-4c41-a341-aa838fc564df"
-            allowCustom: true
-          AZURE_NODEPOOL_SUBSCRIPTIONID:
-            allowCustom: true
-            default: "f27d81be-eea4-479e-a745-11088b8cc1b0"
-            description: "Default Azure subscription-id"
-          AZURE_NODEPOOL_RESOURCEGROUPNAME:
-            allowCustom: true
-            default: "pipelines-bp-westus"
-            description: "Default Azure resource group name"
-          AZURE_NODEPOOL_VNETNAME:
-            allowCustom: true
-            default: "pipelines-bp-westus"
-            description: "Default Azure vnetname"
-          AZURE_NODEPOOL_SUBNETNAME:
-            allowCustom: true
-            default: "pipelines-bp-westus"
-            description: "Default Azure subnet name"
-          AZURE_NODEPOOL_PUBLICSSHKEY:
-            allowCustom: true
-            default: "\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCA0GPIdWfyEn21jkMhS8/JvoJ4viuPmnBhuazjwUbilM3zO38hQc8nr8eW0zJS/zpf2V9QewpJ1t9x5tw4bdTRMN99aaIbqr6ZSz/1ofFL1PkpC9Y7HWi+dmpxlIqRkX6JGPaUNb2ql71vVPY0tLg2G4MgcX/ZFQCVO3z/o20HURgrcxYEu5A3+dOkyiE3JQBi+s66cgDm7p3IIND2eEHcZiIsaW6vg2T85oF8WkXcpHFLLXt5gzND6f/8TwW657QXe2P5mijWwTtCOaopfSK0vXC1dFzPPpwKGPTv7KrsTSPL3c/QP6YqEYratKpNTenmvGPGqYNFgj8oMIbVN2SP\""
-            description: "Default Azure public ssh-key"
-          AZURE_NODEPOOL_INSTANCESIZE:
-            allowCustom: true
-            default: "Standard_F2s"
-            description: "Default Azure instance size"
-          GCP_NODEPOOL_INSTANCESIZE:
-            allowCustom: true
-            default: "n1-standard-2"
-            description: "This variable is used to set default instance size for azure node pool"
-          GCP_NODEPOOL_SUBNET:
-            allowCustom: true
-            default: "jfrog-usw1-dynamicnodes"
-            description: "This variable is used to set default instance size for azure node pool"
-          GCP_NODEPOOL_NETWORK_TAGS:
-            allowCustom: true
-            default: "behind-nat,jenkins,pipelines,xray-app,xray-apps"
-            description: "This variable is used to set default instance size for azure node pool"
-          GCP_NODEPOOL_ZONE:
-            allowCustom: true
-            default: "us-west1-b"
-            description: "This variable is used to set default instance size for azure node pool"
-          D_GOOGLECLOUD_PROJECT_INTEGRATION_JSONKEY:
-            allowCustom: true
-            default: "${int_test_automation_gcp_jsonKey}"
-            description: "This variable is used to set default instance size for azure node pool"
-          KUBERNETES_NODEPOOL_STORAGECLASS:
-            allowCustom: true
-            default: "standard"
-            description: "This variable is used to set default storage class for kubernetes node pool"
-          KUBERNETES_NODEPOOL_NAMESPACE:
-            allowCustom: true
-            default: "pipe-master-pool"
-            description: "This variable is used to set default namespace for kubernetes node pool"
-          KUBERNETES_PROJECT_INTEGRATION_KUBECONFIG:
-            allowCustom: true
-            default: "${int_KubeFile_automation_kubeconfig}"
-            description: "This variable is used to set default kubeconfig for kubernetes node pool"
-          KUBERNETES_PROJECT_INTEGRATION_KUBECONFIG_PATH:
-            allowCustom: true
-            default: "${step_workspace_dir}/KubeFile_automation/config"
-            description: "This variable is used to set default kubeconfig for kubernetes node pool"
-          DONT_DELETE_PS:
-            description: "When run status reaches error status, pipeline source doesn't get deleted "
-            default: "false"
-            allowCustom: true
-          DEFAULT_NODE_POOL_NAME:
-            allowCustom: true
-            default: u20dynamic
-            description: "Default nodePool"
-          PREP_FOR_HELM_TESTS:
-            description: "Upload helm test files to artifactory for running helm test cases"
-            default: "false"
-            allowCustom: true
-          U20_STATIC_IP_ADDRESS:
-            allowCustom: false
-            default:  "${res_ubuntu_20_static_vm_ip_address}"
-            description: "Ubuntu 20 static vm ip address"
-          RHEL7_STATIC_IP_ADDRESS:
-            allowCustom: false
-            default:  "${res_redhat_7_static_vm_ip_address}"
-            description: "Redhat 7 static vm ip address"
-          CENT7_STATIC_IP_ADDRESS:
-            allowCustom: false
-            default:  "${res_centos_7_static_vm_ip_address}"
-            description: "CentOS 7 static vm ip address"
-          SSH_USER:
-            allowCustom: false
-            default:  "automation"
-            description: "SSH user name in automation"
-          SSH_PRIVATE_KEY:
-            allowCustom: false
-            default:  "${int_automation_ssh_privateKey}"
-            description: "SSH private key value in automation"
-          GITHUB_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "PIPA/Org_test_Automation_Webhooks"
-            description: "GitHub webhook test repository"
-          BITBUCKET_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "jfbeta/org_test_automation_webhooks"
-            description: "Bitbucket webhook test repository"
-          BITBUCKETSERVERBASIC_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "PIP/tests"
-            description: "BitbucketServerBasic webhook test repository"
-          GITLAB_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "jfbeta/webhooks"
-            description: "GitLab webhook test repository"
-          PIPELINES_SERVICE_USER_TOKEN:
-            allowCustom: true
-            default: "Testing1234"
-            description: Service User Token
-          DEPLOY_KEYS_REPOSITORY_FULL_NAME:
-            allowCustom: true
-            default: "PIPA/org_test_automation_deploy_keys"
-            description: 'deploy keys automation github repository'
-          BITBUCKET_SERVER_PASSWORD:
-            description: "BBS password"
-            default: "${int_test_automation_bbs_new_password}"
-            allowCustom: true
-          BITBUCKET_SERVER_URL:
-            description: "BBS url"
-            default: "${int_test_automation_bbs_new_url}"
-            allowCustom: true
-          BITBUCKET_SERVER_USERNAME:
-            description: "BBS username"
-            default: "${int_test_automation_bbs_new_username}"
-            allowCustom: true
-          GITHUB_REPOSITORY_BRANCH: "master"
-          GITHUB_REPOSITORY_FULLPATH_BASH: "jfrog/Org_test_Automation_bash"
-          GITHUB_REPOSITORY_FULLPATH_POWERSHELL: "jfrog/Org_test_Automation_PowerShell"
-          MULTIBRANCH_REPOSITORY_FULL_NAME: "PIPA/org_test_automation_MultiBranch"
-          GITHUB_REPOSITORY_FULLPATH_BASH_BRANCH: "master"
-          EMPTY_REPOSITORY_FULL_NAME : "PIPA/Org_test_Automation_empty"
-          REPOSITORY_SANITY_PIPELINE_FULL_NAME: "PIPA/sanity_pipeline"
-          ENTPLUS_ARTIFACTORY_INTEGRATION_USER:
-            description: "values for custom tag to identify testing instances"
-            default: "${int_entArt_user}"
-            allowCustom: true
-          ENTPLUS_ARTIFACTORY_INTEGRATION_URL:
-            description: "values for custom tag to identify testing instances"
-            default: "${int_entArt_url}"
-            allowCustom: true
-          ENTPLUS_ARTIFACTORY_INTEGRATION_APIKEY:
-            description: "values for custom tag to identify testing instances"
-            default: "${int_entArt_apikey}"
-            allowCustom: true
-      integrations:
-        - name: test_automation
-        - name: test_automation_token
-        - name: test_automation_bbs_new
-        - name: KubeFile_automation
-        - name: entArt
-        - name: lightweight_automation_generic
-        - name: test_automation_jira
-        - name: pipelines_mqtest_slack
-        - name: az_jfrog_new
-        - name: test_automation_gcp
-        - name: automation_ssh
-        - name: test_automation_bitbucket
-        - name: s_gitHub
-        - name: mc_license
-    steps:
-      - name: setup_prematrix
-        type: PreMatrix
-        configuration:
-          inputResources:
-            - name: auto_gitRepo
-              trigger: false
-            - name: automation_templateFS
-              trigger: false
-            - name: triggerLightWeightAutomation
-              trigger: true
-            - name: Org_test_Automation_BBS
-              trigger: false
-            - name: Org_test_Automation_bash_BBS
-              trigger: false
-            - name: Org_test_Automation_PowerShell_BBS
-              trigger: false
-            - name: Org_test_Automation_Private_BBS
-              trigger: false
-            - name: org_test_automation_MultiBranch_BBS
-              trigger: false
-            - name: automationArtifacts
-              trigger: false
-          environmentVariables:
-            SKIP_GLOBAL_TEARDOWN: "true"
-            SKIP_NPM_INSTALL: "false"
-            JPD_URL:
-              allowCustom: true
-              default:  "${res_triggerLightWeightAutomation_jpdUrl}"
-              description: "URL of the intance against which you want to trigger smoke test suite"
-            JFROG_JOIN_KEY:
-              allowCustom: true
-              default:  "${res_triggerLightWeightAutomation_joinKey}"
-              description: "Join-key of the instance against which you want to trigger smoke test suite"
-            JPD_JOIN_KEY: #used for adding license for 215 build nodes
-              allowCustom: true
-              default:  "${res_triggerLightWeightAutomation_joinKey}"
-              description: "Join-key of the instance against which you want to trigger smoke test suite"
-          nodePool: pipelines_testing
-        execution:
-          onStart:
-            - cp -r $res_auto_gitRepo_resourcePath/automation/tests .
-            - pushd tests
-            - ls -la
-            - cp -r $res_automation_templateFS_resourcePath .
-            - restore_pipeline_files jsonfile $confFileName
-            - if [[ -f "$confFileName" ]]; then jsonfile=true && cat $confFileName; fi
-            - if ( $jsonfile && $removeConfFile ); then echo "removing confFileName" && rm -rf $confFileName; fi
-            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation"
-            - export WEBHOOKS_REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation_Webhooks"
-            - export REPOSITORY_BRANCH="master"
-            - cp -r $res_Org_test_Automation_BBS_resourcePath .
-            - cp -r $res_Org_test_Automation_bash_BBS_resourcePath .
-            - cp -r $res_Org_test_Automation_PowerShell_BBS_resourcePath .
-            - cp -r $res_Org_test_Automation_Private_BBS_resourcePath .
-            - cp -r $res_org_test_automation_MultiBranch_BBS_resourcePath .
-            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
-            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
-            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            - export ORG_TEST_AUTOMATION_PRIVATE_DIRECTORY="./Org_test_Automation_Private_BBS"
-            - export ORG_TEST_AUTOMATION_MULTIBRANCH_DIRECTORY="./org_test_automation_MultiBranch_BBS"
-            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
-            - sudo chmod 0777 $TEMPLATE_BINARY_PATH
-            - echo "Create MC token"
-            - mkdir -p /tmp/npm_cache
-            - restore_pipeline_files npm_cache /tmp/npm_cache/
-            - jfrog rt npmc --server-id-resolve entArt --repo-resolve npm-virtual
-            - jfrog rt npmci
-            - add_pipeline_files /tmp/npm_cache npm_cache
-            - export MC_ACCESS_TOKEN=$(node createAccessToken.js | tail -1)
-            - echo $MC_ACCESS_TOKEN
-            - echo "Uploading 200 parallel builds license for d2c environment"
-            - |
-              if ( $res_triggerLightWeightAutomation_d2c == "true" ) then
-                curl -X POST "${JPD_URL}/mc/api/v1/buckets" \
-                  -H "Authorization: Bearer $MC_ACCESS_TOKEN" -H 'Content-Type: multipart/form-data' \
-                  -F "file=@$res_automationArtifacts_resourcePath/186060683_1657637804148.json;type=application/octet-stream" \
-                  -F "key=$int_mc_license_key" \
-                  -F 'name=mybucket' -Lvvv
-              fi
-            - echo "res_auto_gitRepo_commitMessage - $res_auto_gitRepo_commitMessage"
-            - export GREP=$(node selectiveTestsValidator/selectiveTestSetup.js "$res_auto_gitRepo_commitMessage" "${int_test_automation_jira_url}" "${int_test_automation_jira_username}" "${int_test_automation_jira_token}")
-            - echo "GREP - $GREP"
-            - add_run_variables globalGREP="$GREP"
-            - export_run_variables globalGREP="$GREP"
-            - add_run_variables JPD_URL="$JPD_URL"
-            - add_run_variables JFROG_JOIN_KEY="$JFROG_JOIN_KEY"
-            - ./test.sh
-            - popd
-            - rm -rf $res_auto_gitRepo_resourcePath
-
-      - name: test_set_1
-        type: Matrix
-        stepMode: Bash
-        configuration:
-          environmentVariables:
-            timeoutSeconds: 21600
-            SKIP_GLOBAL_TEARDOWN: "true"
-            SKIP_SETUP: "true"
-          nodePool: pipelines_testing
-          inputSteps:
-            - name: setup_prematrix
-              status:
-                - success
-        stepletMultipliers:
-          environmentVariables:
-            - listOfTests:    "core/steps/Bash/BashGeneric/*.js,\
-                              core/steps/Bash/BashIntegrations/*.js,\
-                              core/steps/Bash/BashNative/*.js,\
-                              core/steps/Bash/BashResources/*.js,\
-                              core/resources/Bash/*.js,\
-                              core/steps/Bash/BashUtilityFunctions/*.js"
-              repositoryFullName:    "PIPA/Org_test_Automation_bash"
-            - listOfTests:    "core/steps/PowerShell/PSGeneric/Sync/*.js,\
-                              core/steps/PowerShell/PSGeneric/Trigger/*.js,\
-                              core/steps/PowerShell/PSIntegration/*.js,\
-                              core/steps/PowerShell/PSNative/*.js,\
-                              core/steps/PowerShell/PSResources/*.js,\
-                              core/steps/PowerShell/PSUtilityfunctions/*.js"
-              repositoryFullName:    "PIPA/Org_test_Automation_Powershell"
-            - listOfTests:    "core/multibranch/pipelines/*.js,\
-                              core/multibranch/resources/*.js,\
-                              core/multibranch/pipelineSyncStatuses/*.js"
-              repositoryFullName:    "PIPA/org_test_automation_MultiBranch"
-            - listOfTests: "core/steps/Matrix/*.js"
-        execution:
-          onExecute:
-            - echo "Executing matrix step on ${steplet_id}"
-            - echo "Variation listOfTests = ${listOfTests}, REPOSITORY_FULL_NAME = ${repositoryFullName}"
-            - testPath=setup_prematrix/tests
-            - echo "testPath - $testPath"
-            - pushd $testPath
-            - ls -al
-            - export REPOSITORY_BRANCH="master"
-            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
-            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            - export ORG_TEST_AUTOMATION_MULTIBRANCH_DIRECTORY="./org_test_automation_MultiBranch_BBS"
-            - export TEMPLATES_REPOSITORY_FULL_NAME="PIPA/templates"
-            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
-            - export testCases=$listOfTests
-            - export REPOSITORY_FULL_NAME=$repositoryFullName
-            - echo "GREP - $globalGREP"
-            - export GREP=$globalGREP
-            - ./test.sh
-          onSuccess:
-            - cat $confFileName
-            - popd
-            - add_run_files $testPath/testResults report_${steplet_id}
-            - cp -r $testPath/testResults .
-            - cp $testPath/token.json .
-          onFailure:
-            - cat $confFileName
-            - popd
-            - add_run_files $testPath/testResults report_${steplet_id}
-            - cp -r $testPath/testResults .
-            - cp $testPath/token.json .
-          onComplete:
-            - popd
-            - save_tests testResults/mocha-junit-reporter
-            - |
-              if [ -d "resultData" ]; then
-                # Take action if $DIR exists. #
-                rm -r resultData/*
-              else
-                mkdir resultData
-              fi
-            - pushd setup_prematrix/tests/mochawesome-report
-            - mv mochawesome.json mochawesome-${steplet_id}.json
-            - add_run_files mochawesome-${steplet_id}.json ../../resultData/mochawesome-${steplet_id}.json
-
-      - name: test_set_2
-        type: Matrix
-        stepMode: Bash
-        configuration:
-          environmentVariables:
-            timeoutSeconds: 7200
-            SKIP_GLOBAL_TEARDOWN: "true"
-            SKIP_SETUP: "true"
-          nodePool: pipelines_testing
-          inputSteps:
-            - name: test_set_1
-              status:
-                - success
-                - failure
-                - error
-        stepletMultipliers:
-          environmentVariables:
-            - listOfTests:    "core/workFlow/pipeline/trigger/*.js,\
-                              core/workFlow/pipeline/sync/*.js,\
-                              core/workFlow/pipeline/scm/*.js,\
-                              core/api/*.js,\
-                              core/workFlow/environments/*.js,\
-                              core/workFlow/step/*.js,\
-                              core/workFlow/*.js,\
-                              core/projectIntegrations/*.js,\
-                              core/resources/Bash/*.js,\
-                              core/resources/PowerShell/*.js,\
-                              core/resources/Sync/*.js,\
-                              core/resources/*.js,\
-                              core/pipeInfo/*.js,\
-                              core/pipelines/SCM/*.js,\
-                              core/pipelines/Sync/*.js,\
-                              core/pipelineSources/*.js,\
-                              core/steps/Sync/*.js,\
-                              core/pipelines/*.js,\
-                              core/nodePools/AWSDynamicNodes/*.js,\
-                              core/nodePools/AZDynamicNodes/*.js,\
-                              core/nodePools/GCPDynamicNodes/*.js,\
-                              core/nodePools/K8sDynamicNodes/*.js,\
-                              core/nodePools/staticNodes/*.js,\
-                              core/nodePools/K8sDynamicNodes/k8sdynamicNodePool2.js,\
-                              core/nodePools/*.js,\
-                              core/templates/*.js,\
-                              core/templates/SCM/*.js,\
-                              core/workFlow/pipeline/trigger/pipelineWorkFlowComplexPipelines1.js,\
-                              core/workFlow/pipeline/trigger/pipelineWorkFlowComplexPipelines4.js, \
-                              core/extensions/*.js,\
-                              core/steps/Sync/*.js,\
-                              core/entitlements/*.js,\
-                              core/webhooks/*.js,\
-                              core/workspace/*.js,\
-                              core/multibranch/generic/genericMultibranch.js"
-              repositoryFullName:    "PIPA/Org_test_Automation"
-        execution:
-          onExecute:
-            - echo "Executing matrix step on ${steplet_id}"
-            - echo "Variation listOfTests = ${listOfTests}, REPOSITORY_FULL_NAME = ${repositoryFullName}"
-            - testPath=test_set_1/setup_prematrix/tests
-            - echo "testPath - $testPath"
-            - pushd $testPath
-            - ls -al
-            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
-            - export REPOSITORY_BRANCH="master"
-            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
-            - export testCases=$listOfTests
-            - export REPOSITORY_FULL_NAME=$repositoryFullName
-            - echo "GREP - $globalGREP"
-            - export GREP=$globalGREP
-            - ./test.sh
-          onSuccess:
-            - cat $confFileName
-            - popd
-            - add_run_files $testPath/testResults report_${steplet_id}
-            - cp -r $testPath/testResults .
-            - cp $testPath/token.json .
-          onFailure:
-            - cat $confFileName
-            - popd
-            - add_run_files $testPath/testResults report_${steplet_id}
-            - cp -r $testPath/testResults .
-            - cp $testPath/token.json .
-          onComplete:
-            - popd
-            - save_tests testResults/mocha-junit-reporter
-            - pushd test_set_1/setup_prematrix/tests
-            - pushd mochawesome-report
-            - mv mochawesome.json mochawesome-${steplet_id}.json
-            - add_run_files mochawesome-${steplet_id}.json ../../test_set_1/resultData/mochawesome-${steplet_id}.json
-            - ls -la
-            - add_run_files ../../../resultData resultDataStore
-
-      - name: teardown_postmatrix
-        type: PostMatrix
-        configuration:
-          integrations:
-            - name: jfdev_agent
-            - name: dockerDotJfrog
-          inputResources:
-            - name: auto_gitRepo
-              trigger: false
-            - name: triggerLightWeightAutomation
-              trigger: false
-          outputResources:
-            - name: updated_grep_resource
-          inputSteps:
-            - name: test_set_2
-              status:
-                - success
-                - failure
-                - error
-          environmentVariables:
-            SKIP_NPM_INSTALL: "false"
-            listOfTests: "core/api/nodes.js"
-          chronological: true
-          nodePool: pipelines_testing
-        execution:
-          onStart:
-            - pushd $res_auto_gitRepo_resourcePath/automation/tests/
-            - restore_pipeline_files jsonfile $confFileName
-            - if [[ -f "$confFileName" ]]; then jsonfile=true && cat $confFileName; fi
-            - if ( $jsonfile && $removeConfFile ); then echo "removing confFileName" && rm -rf $confFileName; fi
-            - export testCases="core/api/systemCodes.js"
-            - mkdir -p /tmp/npm_cache
-            - restore_pipeline_files npm_cache /tmp/npm_cache/
-            - jfrog rt npmc --server-id-resolve entArt --repo-resolve npm-virtual
-            - jfrog rt npmci
-            - add_pipeline_files /tmp/npm_cache npm_cache
-            - echo "res_auto_gitRepo_commitMessage - $res_auto_gitRepo_commitMessage"
-            - echo "res_auto_gitRepo_lastAuthorEmail - $res_auto_gitRepo_lastAuthorEmail"
-            - committer=$(node committerLoginExtractor.js $res_auto_gitRepo_lastAuthorEmail)
-            - add_run_variables committer=$committer
-            - export GREP=$(node selectiveTestsValidator/selectiveTestSetup.js "$res_auto_gitRepo_commitMessage" "${int_test_automation_jira_url}" "${int_test_automation_jira_username}" "${int_test_automation_jira_token}")
-            - echo "GREP - $GREP"
-            - ./test.sh
-            - restore_run_files resultDataStore resultDataStore
-            - ls -la ./resultDataStore
-            - result=$(node selectiveTestsValidator/selectiveTestValidator.js "./resultDataStore/*.json" "$GREP")
-            - echo "result - $result"
-          onSuccess:
-            - |
-              if [ "$GREP" == "SMOKE_TEST" ]; then
-                echo "updating resource for asking Team Lead's approval"
-                write_output updated_grep_resource "GREP=$GREP"
-              fi
-            - add_run_variables smoke_result="success"
-          onFailure:
-            - add_run_variables smoke_result="failure"
-            {{ if eq "master" "{{gitBranch}}" }}
-            - send_notification pipelines_mqtest_slack --text "Pipeline - $pipeline_name | Step - $step_name \n Committer - <$committer> <@ambrishs> <@jasmeets> \n Commit - $res_auto_gitRepo_commitSha $res_auto_gitRepo_commitMessage \n Branch - $res_auto_gitRepo_branchName \n URL - $step_url"
-            {{ else }}
-            - send_notification pipelines_mqtest_slack --text "Pipeline - $pipeline_name | Step - $step_name \n Committer - <$committer> \n Commit - $res_auto_gitRepo_commitSha $res_auto_gitRepo_commitMessage \n Branch - $res_auto_gitRepo_branchName \n URL - $step_url"
-            {{ end }}
-          onComplete:
-            - save_tests ./test_set_2/testResults/mocha-junit-reporter
-      {{ if not (or (hasSuffix "d2c" "{{gitBranch}}") (eq "master" "{{gitBranch}}")) }}
-      - name: cleanup_namespace_branch
-        type: Bash
-        configuration:
-          runtime:
-            type: image
-            image:
-              custom:
-                name: jfpip.jfrog.io/jfrog/pipelines-tools
-                tag: latest
-                registry: bsEntPlus
-                sourceRepository: dev-releases-docker-local
-          environmentVariables:
-            ACTION: "DELETE"
-          integrations:
-            - name: jfrog_dev
-            - name: entArt
-            - name: pipeline_chart_creds
-            - name: awsStg
-          inputResources:
-            - name: cpGit
-              trigger: false
-          inputSteps:
-            - name: teardown_postmatrix
-              status:
-                - failure
-                - success
-                - skipped
-                - cancelled
-                - error
-                - timeout
-        execution:
-          onExecute:
-            - pushd $res_cpGit_resourcePath
-            - NORMALIZED_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
-            - releaseVersion=$NORMALIZED_VERSION
-            - prefix="0.0.0-"
-            - export namespace=${releaseVersion#$prefix}
-            - echo "Deleting the namespace $namespace"
-            - pushd $res_cpGit_resourcePath/infra/chart
-            - replace_envs credentials/creds.values configs/route53.json
-            - bash cleanup.sh
-            - popd
-      {{end}}
-      - name: tl_approval_gate
-        type: Bash
-        configuration:
-          inputResources:
-            - name: updated_grep_resource
-              newVersionOnly: true
-          inputSteps:
-            - name: teardown_postmatrix
-              status:
-                - success
-          nodePool: pipelines_testing
-          requiresApproval:
-            approvers:
-              - yashprits
-              - nishiths
-              - vivekk
-            notifications:
-              - integrationName: pipelines_mqtest_slack
-        execution:
-          onExecute:
-            - echo "Got the approval from Team Lead"
-
-      - name: mq_test_result
-        type: Bash
-        configuration:
-          inputResources:
-            - name: auto_gitRepo
-              trigger: false
-          inputSteps:
-            - name: tl_approval_gate
-              status:
-                - skipped
-                - success
-            - name: teardown_postmatrix
-              status:
-                - success
-                - failure
-                - error
-          nodePool: pipelines_testing
-        execution:
-          onExecute:
-            - echo "The smoke test status is $smoke_result"
-            - |
-              if [ "$smoke_result" == "failure" ]; then
-                exit 1
-              fi
-          onSuccess:
-            - update_commit_status auto_gitRepo
-          onFailure:
-            - update_commit_status auto_gitRepo
-{{end}}
-
-  {{ if eq "master" "{{gitBranch}}" }}
-  - name: cleanup_k8s_namespace_cluster
-    steps:
-      - name: cleanup_namespace_cluster
-        type: Bash
-        configuration:
-          runtime:
-            type: image
-            image:
-              custom:
-                name: jfpip.jfrog.io/jfrog/pipelines-tools
-                tag: latest
-                registry: bsEntPlus
-                sourceRepository: dev-releases-docker-local
-          environmentVariables:
-            ACTION: "DELETE"                
-          integrations:
-            - name: jfrog_dev
-            - name: entArt
-            - name: pipeline_chart_creds
-            - name: awsStg
-          inputResources:
-            - name: cpGit
-              trigger: false
-            - name: cpGitNamespace          
-        execution:
-          onExecute:
-            - pushd $res_cpGit_resourcePath
-            - deleted_branch=$res_cpGitNamespace_branchName
-            - echo $deleted_branch
-            - NORMALIZED_VERSION=$(./normalizeReleaseVersion.sh ${deleted_branch})
-            - releaseVersion=$NORMALIZED_VERSION
-            - prefix="0.0.0-"
-            - export namespace=${releaseVersion#$prefix}
-            - echo "Deleting the namespace $namespace"
-            - pushd $res_cpGit_resourcePath/infra/chart
-            - replace_envs credentials/creds.values configs/route53.json
-            - bash cleanup.sh
-            - popd
-  {{ end }}
-
-  - name: custom_certs_automation
-    configuration:
-      nodePool: pipelines_automation_generic
-      integrations:
-        - name: automation_ssh
-        - name: entplus_deployer
-        - name: pipelines_itest_slack
-      inputResources:
-        - name: ubuntu_20_static_vm
-          trigger: false
-        - name: redhat_7_static_vm
-          trigger: false
-        - name: centos_7_static_vm
-          trigger: false
-      environmentVariables:
-        readOnly:
-          AWS_NODEPOOL_CUSTOMTAG_KEYS:
-            description: "keys for custom tag to identify testing instances"
-            default: "pipelines-internal,Group"
-            allowCustom: true
-          AWS_NODEPOOL_CUSTOMTAG_VALUES:
-            description: "values for custom tag to identify testing instances"
-            default: "testing,PIPELINES"
-            allowCustom: true
-          DEFAULT_UBUNTU_NODEPOOL_OS:
-            allowCustom: true
-            default: "Ubuntu_20.04"
-            description: "Default operating system for node pool tests"
-          DEFAULT_NODEPOOL_NUMBEROFNODES:
-            allowCustom: true
-            default: 1
-            description: "Default number of nodes for node pool tests"
-          DEFAULT_NODEPOOL_REGION:
-            allowCustom: true
-            default: "$res_triggerLightWeightAutomation_region"
-            description: "Default region for node pool tests"
-          DEFAULT_AZURE_NODEPOOL_REGION:
-            allowCustom: true
-            default: "westus"
-            description: "Default region for azure node pool tests"
-          DEFAULT_GCP_NODEPOOL_REGION:
-            allowCustom: true
-            default: "us-west1"
-            description: "Default region for gcp node pool tests"
-          DEFAULT_NODEPOOL_ARCHITECTURE:
-            allowCustom: true
-            default: "x86_64"
-            description: "Default architecture for node pool tests"
-          DEFAULT_NODEPOOL_NODEIDLEINTERVAL:
-            allowCustom: true
-            default: 1
-            description: "Default node interval(in min) for node pool tests"
-          DEFAULT_NODEPOOL_DISKSIZE:
-            allowCustom: true
-            default: 90
-            description: "Default disk size for node pool tests"
-          DEFAULT_NODEPOOL_TIMEOUT:
-            allowCustom: true
-            default: 30000
-            description: "Default timeout(in sec) for node pool tests"
-          DEFAULT_WINDOWS_NODEPOOL_OS:
-            allowCustom: true
-            default: "WindowsServer_2019"
-          AWS_NODEPOOL_KEYPAIRNAME:
-            description: "AWS key-pair"
-            default: "$res_triggerLightWeightAutomation_keyPair"
-            allowCustom: true
-          AWS_NODEPOOL_SECOND_KEYPAIRNAME:
-            description: "AWS second key-pair"
-            default: "pipetesting003-eu-central-1"
-            allowCustom: true
-          AWS_NODEPOOL_SUBNETID:
-            description: "Default AWS subnet-id"
-            default: "$res_triggerLightWeightAutomation_subnet"
-            allowCustom: true
-          AWS_NODEPOOL_SECOND_SUBNETID:
-            description: "second AWS subnet-id"
-            default: "subnet-050a07ea2f5cbee1c"
-            allowCustom: true
-          AWS_NODEPOOL_INSTANCESIZE:
-            description: "Default AWS instance-size"
-            default: "t3a.medium"
-            allowCustom: true
-          AWS_NODEPOOL_WIN_19_INSTANCESIZE:
-            description: "Default AWS instance-size"
-            default: "t3a.medium"
-            allowCustom: true
-          AWS_NODEPOOL_SECURITYGROUPID:
-            description: " Default AWS security group-id"
-            default: "$res_triggerLightWeightAutomation_securityGroup"
-            allowCustom: true
-          AWS_NODEPOOL_SECOND_SECURITYGROUPID:
-            description: " second AWS security group-id"
-            default: "sg-0ea095851df05843e"
-            allowCustom: true
-          AWS_PROJECT_INTEGRATION_ACCESSKEYID:
-            description: "Default AWS access key-id"
-            default: "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}"
-            values:
-              - "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}"
-              - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_ACCESSKEYID}"
-            allowCustom: true
-          AWS_PROJECT_INTEGRATION_SECRETACCESSKEY:
-            description: "Default AWS ecret access-key"
-            default: "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
-            values:
-              - "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
-              - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_SECRETACCESSKEY}"
-            allowCustom: true
-          D_AZUREKEYS_PROJECT_INTEGRATION_APPID:
-            description: "Default Azure app-id"
-            default: "192757c5-73a6-4257-84ec-1fe4c30f98fb"
-            allowCustom: true
-          D_AZUREKEYS_PROJECT_INTEGRATION_PASSWORD:
-            description: "Default Azure password"
-            default: "${int_az_jfrog_new_password}"
-            allowCustom: true
-          D_AZUREKEYS_PROJECT_INTEGRATION_TENANT:
-            description: "Default Azure tenant key"
-            default: "ad8b5a8c-9862-4c41-a341-aa838fc564df"
-            allowCustom: true
-          AZURE_NODEPOOL_SUBSCRIPTIONID:
-            allowCustom: true
-            default: "f27d81be-eea4-479e-a745-11088b8cc1b0"
-            description: "Default Azure subscription-id"
-          AZURE_NODEPOOL_RESOURCEGROUPNAME:
-            allowCustom: true
-            default: "pipelines-bp-westus"
-            description: "Default Azure resource group name"
-          AZURE_NODEPOOL_VNETNAME:
-            allowCustom: true
-            default: "pipelines-bp-westus"
-            description: "Default Azure vnetname"
-          AZURE_NODEPOOL_SUBNETNAME:
-            allowCustom: true
-            default: "pipelines-bp-westus"
-            description: "Default Azure subnet name"
-          AZURE_NODEPOOL_PUBLICSSHKEY:
-            allowCustom: true
-            default: "\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCA0GPIdWfyEn21jkMhS8/JvoJ4viuPmnBhuazjwUbilM3zO38hQc8nr8eW0zJS/zpf2V9QewpJ1t9x5tw4bdTRMN99aaIbqr6ZSz/1ofFL1PkpC9Y7HWi+dmpxlIqRkX6JGPaUNb2ql71vVPY0tLg2G4MgcX/ZFQCVO3z/o20HURgrcxYEu5A3+dOkyiE3JQBi+s66cgDm7p3IIND2eEHcZiIsaW6vg2T85oF8WkXcpHFLLXt5gzND6f/8TwW657QXe2P5mijWwTtCOaopfSK0vXC1dFzPPpwKGPTv7KrsTSPL3c/QP6YqEYratKpNTenmvGPGqYNFgj8oMIbVN2SP\""
-            description: "Default Azure public ssh-key"
-          AZURE_NODEPOOL_INSTANCESIZE:
-            allowCustom: true
-            default: "Standard_F2s"
-            description: "Default Azure instance size"
-          GCP_NODEPOOL_INSTANCESIZE:
-            allowCustom: true
-            default: "n1-standard-2"
-            description: "This variable is used to set default instance size for azure node pool"
-          GCP_NODEPOOL_SUBNET:
-            allowCustom: true
-            default: "jfrog-usw1-dynamicnodes"
-            description: "This variable is used to set default instance size for azure node pool"
-          GCP_NODEPOOL_NETWORK_TAGS:
-            allowCustom: true
-            default: "behind-nat,jenkins,pipelines,xray-app,xray-apps"
-            description: "This variable is used to set default instance size for azure node pool"
-          GCP_NODEPOOL_ZONE:
-            allowCustom: true
-            default: "us-west1-b"
-            description: "This variable is used to set default instance size for azure node pool"
-          D_GOOGLECLOUD_PROJECT_INTEGRATION_JSONKEY:
-            allowCustom: true
-            default: "${int_test_automation_gcp_jsonKey}"
-            description: "This variable is used to set default instance size for azure node pool"
-          KUBERNETES_NODEPOOL_STORAGECLASS:
-            allowCustom: true
-            default: "standard"
-            description: "This variable is used to set default storage class for kubernetes node pool"
-          KUBERNETES_NODEPOOL_NAMESPACE:
-            allowCustom: true
-            default: "pipe-master-pool"
-            description: "This variable is used to set default namespace for kubernetes node pool"
-          KUBERNETES_PROJECT_INTEGRATION_KUBECONFIG:
-            allowCustom: true
-            default: "${int_KubeFile_automation_kubeconfig}"
-            description: "This variable is used to set default kubeconfig for kubernetes node pool"
-          KUBERNETES_PROJECT_INTEGRATION_KUBECONFIG_PATH:
-            allowCustom: true
-            default: "${step_workspace_dir}/KubeFile_automation/config"
-            description: "This variable is used to set default kubeconfig for kubernetes node pool"
-          DONT_DELETE_PS:
-            description: "When run status reaches error status, pipeline source doesn't get deleted "
-            default: "false"
-            allowCustom: true
-          GREP:
-            description: "Only run tests matching this string"
-            default: "CUSTOM_CERTS"
-            allowCustom: true
-          INVERT:
-            description: "Skip all the tests matching the grep string. Accepts only true or false"
-            default: "false"
-            allowCustom: true
-          PREP_FOR_HELM_TESTS:
-            description: "Upload helm test files to artifactory for running helm test cases"
-            default: "false"
-            allowCustom: true
-          U20_STATIC_IP_ADDRESS:
-            allowCustom: false
-            default:  "${res_ubuntu_20_static_vm_ip_address}"
-            description: "Ubuntu 20 static vm ip address"
-          RHEL7_STATIC_IP_ADDRESS:
-            allowCustom: false
-            default:  "${res_redhat_7_static_vm_ip_address}"
-            description: "Redhat 7 static vm ip address"
-          CENT7_STATIC_IP_ADDRESS:
-            allowCustom: false
-            default:  "${res_centos_7_static_vm_ip_address}"
-            description: "CentOS 7 static vm ip address"
-          SSH_USER:
-            allowCustom: false
-            default:  "automation"
-            description: "SSH user name in automation"
-          SSH_PRIVATE_KEY:
-            allowCustom: false
-            default:  "${int_automation_ssh_privateKey}"
-            description: "SSH private key value in automation"
-          GITHUB_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "PIPA/Org_test_Automation_Webhooks"
-            description: "GitHub webhook test repository"
-          BITBUCKET_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "jfbeta/org_test_automation_webhooks"
-            description: "Bitbucket webhook test repository"
-          BITBUCKETSERVERBASIC_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "PIP/tests"
-            description: "BitbucketServerBasic webhook test repository"
-          GITLAB_WEBHOOKS_REPOSITORY_FULL_NAME:
-            allowCustom: false
-            default:  "jfbeta/webhooks"
-            description: "GitLab webhook test repository"
-          PIPELINES_SERVICE_USER_TOKEN:
-            allowCustom: true
-            default: "Testing1234"
-            description: Service User Token
-          DEPLOY_KEYS_REPOSITORY_FULL_NAME:
-            allowCustom: true
-            default: "PIPA/org_test_automation_deploy_keys"
-            description: 'deploy keys automation github repository'
-          BITBUCKET_SERVER_PASSWORD:
-            description: "BBS password"
-            default: "${int_test_automation_bbs_new_password}"
-            allowCustom: true
-          BITBUCKET_SERVER_URL:
-            description: "BBS url"
-            default: "${int_test_automation_bbs_new_url}"
-            allowCustom: true
-          BITBUCKET_SERVER_USERNAME:
-            description: "BBS username"
-            default: "${int_test_automation_bbs_new_username}"
-            allowCustom: true
-    steps:
-      - name: custom_certs_auto
-        type: Matrix
-        configuration:
-          multiNode: true
-          timeoutSeconds: 10800
-          inputResources:
-            - name: triggerLightWeightAutomation
-              trigger: false
-            - name: auto_gitRepo
-              trigger: false
-            - name: Org_test_Automation_BBS
-              trigger: false
-            - name: Org_test_Automation_bash_BBS
-              trigger: false
-            - name: Org_test_Automation_PowerShell_BBS
-              trigger: false
-            - name: Org_test_Automation_Private_BBS
-              trigger: false
-            - name: org_test_automation_MultiBranch_BBS
-              trigger: false
-            - name: automation_templateFS
-              trigger: false
-          environmentVariables:
-            SKIP_NPM_INSTALL:
-              allowCustom: true
-              default: "true"
-              description: "Flag to skip npm install"
-            removeConfFile: "false"
-            confFileName: conf.json
-            LOG_LEVEL: "info"
-            JFROG_ARTIFACTORY_USER:
-              allowCustom: true
-              default:  admin
-              description: "Admin username of the test instance"
-            JFROG_ADMIN_ARTIFACTORY_PASSWORD:
-              allowCustom: true
-              default: "Password@1"
-              description: Password of the test instance
-            JFROG_ARTIFACTORY_APIKEY:
-              allowCustom: true
-              default: "Password@1"
-              description: API key of the test instance
-            GITHUB_TOKEN:
-              allowCustom: true
-              default:  "${int_s_gitHub_token}"
-              description: "Github access token"
-            GITHUB_URL:
-              allowCustom: true
-              default: "${int_test_automation_token_GITHUB_URL}"
-              description: "Github url path"
-            DEFAULT_NODE_POOL_NAME:
-              allowCustom: true
-              default: u20dynamic
-              description: "Default nodePool"
-            repositoryBranch:
-              allowCustom: true
-              default: "master"
-              description: "Github repository branch"
-            awsProjectIntegrationAccessKeyId:
-              allowCustom: true
-              default: ${int_lightweight_automation_generic_AWS_PROJECT_INTEGRATION_ACCESSKEYID}
-              description: "Default AWS access key"
-            awsProjectIntegrationSecretAccessKey:
-              allowCustom: true
-              default: ${int_lightweight_automation_generic_AWS_PROJECT_INTEGRATION_SECRETACCESSKEY}
-              description: " Default AWS access secret"
-            JOIN_KEY:
-              allowCustom: true
-              default: "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
-              description: Join key of the test instance
-          integrations:
-            - name: test_automation
-            - name: test_automation_token
-            - name: KubeFile_automation
-            - name: entArt
-            - name: lightweight_automation_generic
-            - name: az_jfrog_new
-            - name: test_automation_gcp
-            - name: test_automation_bbs_new
-            - name: test_automation_cert
-        stepletMultipliers:
-          environmentVariables:
-            - repositoryFullName: "PIPA/Org_test_Automation"
-              listOfTests:  "core/extensions/extensions.js,\
-                            core/projectIntegrations/Artifactory.js,\
-                            core/nodePools/K8sDynamicNodes/k8sGenericNode.js,\
-                            core/projectIntegrations/GitLab.js"
-            - repositoryFullName: "PIPA/Org_test_Automation_bash"
-              listOfTests:  "core/steps/Bash/BashIntegrations/BashArtifactoryIntegration.js,\
-                            core/steps/Bash/BashNative/DockerPush.js"
-        execution:
-          onStart:
-            - testPath=$res_auto_gitRepo_resourcePath/automation/tests
-            - pushd $testPath
-            - mkdir -p /tmp/npm_cache
-            - restore_pipeline_files npm_cache /tmp/npm_cache/
-            - jfrog rt npmc --server-id-resolve entArt --repo-resolve npm-virtual
-            - jfrog rt npmci
-            - add_pipeline_files /tmp/npm_cache npm_cache
-            - restore_pipeline_files jsonfile $confFileName
-            - export JPD_URL="https://ccert.jfrog-pipelines.com"
-            - echo "${int_test_automation_cert_key}" > key.crt
-            - chmod 400 key.crt
-            - cp key.crt /usr/local/share/ca-certificates/
-            - update-ca-certificates
-            - curl -L ${JPD_URL}/pipelines/api/v1
-            - export NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/key.crt
-            - export testCases=${listOfTests}
-            - echo "Test files considered for this run -> "$testCases
-            - if [[ -f "$confFileName" ]]; then cat $confFileName; fi
-            - export JFROG_JOIN_KEY=${res_triggerLightWeightAutomation_joinKey}
-            - |
-              if [ -z "${JOIN_KEY}" ]; then
-                if [ -z "${res_triggerLightWeightAutomation_joinKey}" ]; then
-                  echo "join key is missing please custom trigger this step by providing join key"
-                  exit 1
-                else
-                  export JFROG_JOIN_KEY=${res_triggerLightWeightAutomation_joinKey}
-                fi
-              else
-                export JFROG_JOIN_KEY="${JOIN_KEY}"
-              fi
-            - export REPOSITORY_FULL_NAME=${repositoryFullName}
-            - export REPOSITORY_BRANCH=${repositoryBranch}
-            - export ORG_TEST_AUTOMATION_DIRECTORY="${res_Org_test_Automation_BBS_resourcePath}"
-            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="${res_Org_test_Automation_bash_BBS_resourcePath}"
-            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="${res_Org_test_Automation_PowerShell_BBS_resourcePath}"
-            - export ORG_TEST_AUTOMATION_PRIVATE_DIRECTORY="${res_Org_test_Automation_Private_BBS_resourcePath}"
-            - export ORG_TEST_AUTOMATION_MULTIBRANCH_DIRECTORY="${res_org_test_automation_MultiBranch_BBS_resourcePath}"
-            - templateFileName="$(ls ${res_automation_templateFS_resourcePath} | grep pipelines-template)"
-            - chmod +x ${res_automation_templateFS_resourcePath}/${templateFileName}
-            - export TEMPLATES_REPOSITORY_FULL_NAME="PIPA/templates"
-            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
-            - export testCases=$listOfTests
-          onExecute:
-            - ./test.sh
-          onComplete:
-            - add_pipeline_files $confFileName jsonfile
-            - cat $confFileName
-            - save_tests testResults/mocha-junit-reporter
-            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
-            - source pipelines_common.sh
-            - uploadResult="$(on_complete_itest_custom_certs)"
-            - reportPath=${uploadResult%%:*}
-            - reportLink="https://entplus.jfrog.io/artifactory/pipe-itest-reports/custom-certs-itest/$reportPath"
-            - send_notification pipelines_itest_slack --text "Pipeline - $pipeline_name | Step - $step_name \n Commit - $res_auto_gitRepo_commitSha $res_auto_gitRepo_commitMessage \n Branch - $res_auto_gitRepo_branchName \n URL - $step_url \n Link to report - ${reportLink}"
-
-{{ if eq "master" "{{gitBranch}}" }}
-  - name: test_instance_cleanup
-    configuration:
-      integrations:
-        - name: dev2cloud_on_prem
-      nodePool: pipelines_testing
-    steps:
-      - name: search_and_clean_rogue_instances
-        type: Bash
-        configuration:
-          inputResources:
-            - name: clearTestingInstanceCron
-        execution:
-          onExecute:
-            - echo "cleaning up testing instances"
-            - aws configure set region ap-south-1
-            - DATE=$(date --date "-2hours" +"%Y-%m-%dT%H:%M")
-            - |
-              for instance_id in $(aws ec2 describe-instances --filter "Name=tag:pipelines-internal,Values=testing" --query "Reservations[].Instances[?LaunchTime<='$DATE'].[InstanceId]" | jq -r '.[] | .[] | .[]'); do
-              aws ec2 terminate-instances --instance-id $instance_id
-              done
-            - aws configure set region eu-central-1
-            - |
-              for instance_id in $(aws ec2 describe-instances --filter "Name=tag:pipelines-internal,Values=testing" --query "Reservations[].Instances[?LaunchTime<='$DATE'].[InstanceId]" | jq -r '.[] | .[] | .[]'); do
-              aws ec2 terminate-instances --instance-id $instance_id
-              done
-            - echo "finished cleaning up"
-{{ end }}
 
 {{ if or (eq "master" "{{gitBranch}}") (hasPrefix "preRelease" "{{gitBranch}}") (hasPrefix "milestone" "{{gitBranch}}") (hasSuffix "full" "{{gitBranch}}") }}
   - name: scm_itest
@@ -1666,14 +32,14 @@ pipelines:
           JFROG_JOIN_KEY: "$res_itestScm_JPD_JOIN_KEY"
           DEFAULT_NODE_POOL_NAME:
             allowCustom: true
-            default: u20dynamic
+            default: u18dynamic
             description: "Default nodePool"
           #by default this is set to node pool with name `u16dynamic`
           gitUser: "PIPA"
           PREP_BUILDNODES: "true"
           DEFAULT_UBUNTU_NODEPOOL_OS:
             allowCustom: true
-            default: "Ubuntu_20.04"
+            default: "Ubuntu_18.04"
             description: "Default operating system for node pool tests"
           DEFAULT_NODEPOOL_NUMBEROFNODES:
             allowCustom: true
@@ -1844,6 +210,10 @@ pipelines:
             description: "Upload helm test files to artifactory for running helm test cases"
             default: "true"
             allowCustom: true
+          U18_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_ubuntu_18_static_vm_ip_address}"
+            description: "Ubuntu 18 static vm ip address"
           U20_STATIC_IP_ADDRESS:
             allowCustom: false
             default:  "${res_ubuntu_20_static_vm_ip_address}"
@@ -2210,14 +580,14 @@ pipelines:
           JFROG_JOIN_KEY: "$res_itestWebhooks_JPD_JOIN_KEY"
           DEFAULT_NODE_POOL_NAME:
             allowCustom: true
-            default: u20dynamic
+            default: u18dynamic
             description: "Default nodePool"
           #by default this is set to node pool with name `u16dynamic`
           gitUser: "PIPA"
           PREP_BUILDNODES: "false"
           DEFAULT_UBUNTU_NODEPOOL_OS:
             allowCustom: true
-            default: "Ubuntu_20.04"
+            default: "Ubuntu_18.04"
             description: "Default operating system for node pool tests"
           DEFAULT_NODEPOOL_NUMBEROFNODES:
             allowCustom: true
@@ -2388,6 +758,10 @@ pipelines:
             description: "Upload helm test files to artifactory for running helm test cases"
             default: "true"
             allowCustom: true
+          U18_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_ubuntu_18_static_vm_ip_address}"
+            description: "Ubuntu 18 static vm ip address"
           U20_STATIC_IP_ADDRESS:
             allowCustom: false
             default:  "${res_ubuntu_20_static_vm_ip_address}"
@@ -2640,6 +1014,8 @@ pipelines:
       chronological: true
       nodePool: pipelines_testing
       inputResources:
+        - name: ubuntu_18_static_vm
+          trigger: false
         - name: ubuntu_20_static_vm
           trigger: false
         - name: redhat_7_static_vm
@@ -2675,14 +1051,14 @@ pipelines:
             description: "JFROG join key"
           DEFAULT_NODE_POOL_NAME:
             allowCustom: true
-            default: u20dynamic
+            default: u18dynamic
             description: "Default nodePool"
           #by default this is set to node pool with name `u16dynamic`
           gitUser: "PIPA"
           PREP_BUILDNODES: "true"
           DEFAULT_UBUNTU_NODEPOOL_OS:
             allowCustom: true
-            default: "Ubuntu_20.04"
+            default: "Ubuntu_18.04"
             description: "Default operating system for node pool tests"
           DEFAULT_NODEPOOL_NUMBEROFNODES:
             allowCustom: true
@@ -2853,6 +1229,10 @@ pipelines:
             description: "Upload helm test files to artifactory for running helm test cases"
             default: "true"
             allowCustom: true
+          U18_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_ubuntu_18_static_vm_ip_address}"
+            description: "Ubuntu 18 static vm ip address"
           U20_STATIC_IP_ADDRESS:
             allowCustom: false
             default:  "${res_ubuntu_20_static_vm_ip_address}"
@@ -3494,16 +1874,20 @@ pipelines:
         stepletMultipliers:
           environmentVariables:
             - listOfTests:  "core/nodePools/AWSDynamicNodes/c7Dynamicnode.js"
+            - listOfTests:  "core/nodePools/AWSDynamicNodes/u18DynamicNode.js"
             - listOfTests:  "core/nodePools/AWSDynamicNodes/u20DynamicNode.js"
             - listOfTests:  "core/nodePools/AWSDynamicNodes/w19DynamicNodes1.js"
             - listOfTests:  "core/nodePools/AWSDynamicNodes/w19DynamicNodes2.js"
             - listOfTests:  "core/nodePools/AZDynamicNodes/c7DynamicNode.js"
+            - listOfTests:  "core/nodePools/AZDynamicNodes/u18DynamicNode.js"
             - listOfTests:  "core/nodePools/AZDynamicNodes/u20DynamicNode.js"
             - listOfTests:  "core/nodePools/AZDynamicNodes/w19DynamicNodes.js"
             - listOfTests:  "core/nodePools/GCPDynamicNodes/c7DynamicNode.js"
+            - listOfTests:  "core/nodePools/GCPDynamicNodes/u18DynamicNode.js"
             - listOfTests:  "core/nodePools/GCPDynamicNodes/u20DynamicNode.js"
             # - listOfTests:  "core/nodePools/K8sDynamicNodes/c7DynamicNode.js"
-            # - listOfTests:  "core/nodePools/K8sDynamicNodes/k8sGenericNode.js"\
+            # - listOfTests:  "core/nodePools/K8sDynamicNodes/k8sGenericNode.js"
+            # - listOfTests:  "core/nodePools/K8sDynamicNodes/u18DynamicNode.js"
             # - listOfTests:  "core/nodePools/K8sDynamicNodes/u20DynamicNode.js"
             - listOfTests:  "core/nodePools/K8sDynamicNodes/k8sDynamicNodePool1.js"
             - listOfTests:  "core/nodePools/AWSDynamicNodePools.js"
@@ -3512,6 +1896,7 @@ pipelines:
             # - listOfTests:  "core/nodePools/dynamicGCPNodePools.js"
             # - listOfTests:  "core/nodePools/dynamicKubernetesNodePools.js"
             - listOfTests:  "core/nodePools/GenericNodePools.js"
+            - listOfTests:  "core/nodePools/staticNodes/u18static.js"
             - listOfTests:  "core/nodePools/staticNodes/u20static.js"
             - listOfTests:  "core/nodePools/staticNodes/cent7static.js"
             - listOfTests:  "core/nodePools/staticNodes/rhel7static.js"
@@ -3633,6 +2018,7 @@ pipelines:
             - listOfTests: "core/workFlow/step/stepWorkflow27.js"
             - listOfTests: "core/workFlow/step/stepWorkflow29.js"
             - listOfTests: "core/workFlow/step/triggerPipelineWorkflow.js"
+            - listOfTests: "core/workFlow/environments/environmentWorkflow.js"
             - listOfTests: "core/workFlow/environments/globalAndProjectEnvironmentVariables.js"
         execution:
           onExecute:
@@ -4008,14 +2394,14 @@ pipelines:
           JFROG_JOIN_KEY: "$res_itestNativeSteps_JPD_JOIN_KEY"
           DEFAULT_NODE_POOL_NAME:
             allowCustom: true
-            default: u20dynamic
+            default: u18dynamic
             description: "Default nodePool"
           #by default this is set to node pool with name `u16dynamic`
           gitUser: "PIPA"
           PREP_BUILDNODES: "true"
           DEFAULT_UBUNTU_NODEPOOL_OS:
             allowCustom: true
-            default: "Ubuntu_20.04"
+            default: "Ubuntu_18.04"
             description: "Default operating system for node pool tests"
           DEFAULT_NODEPOOL_NUMBEROFNODES:
             allowCustom: true
@@ -4186,6 +2572,10 @@ pipelines:
             description: "Upload helm test files to artifactory for running helm test cases"
             default: "true"
             allowCustom: true
+          U18_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_ubuntu_18_static_vm_ip_address}"
+            description: "Ubuntu 18 static vm ip address"
           U20_STATIC_IP_ADDRESS:
             allowCustom: false
             default:  "${res_ubuntu_20_static_vm_ip_address}"
@@ -4678,6 +3068,8 @@ pipelines:
     configuration:
       nodePool: pipelines_testing
       inputResources:
+        - name: ubuntu_18_static_vm
+          trigger: false
         - name: ubuntu_20_static_vm
           trigger: false
         - name: redhat_7_static_vm
@@ -4728,7 +3120,7 @@ pipelines:
             default: "sg-0ea095851df05843e"
             allowCustom: true
           AWS_NODEPOOL_REGION: "ap-south-1"
-          DEFAULT_NODE_POOL_NAME: "u20dynamic"
+          DEFAULT_NODE_POOL_NAME: "u18dynamic"
           AWS_PROJECT_INTEGRATION_ACCESSKEYID: ${int_lightweight_automation_generic_AWS_PROJECT_INTEGRATION_ACCESSKEYID}
           AWS_PROJECT_INTEGRATION_SECRETACCESSKEY: ${int_lightweight_automation_generic_AWS_PROJECT_INTEGRATION_SECRETACCESSKEY}
           NUMBER_OF_NODES_IN_NODEPOOL:
@@ -4736,7 +3128,7 @@ pipelines:
             default: 200
             allowCustom: true
           # LOCAL_STATE_FILE_PATH: "/tmp/$steplet_number"
-          DEFAULT_UBUNTU_NODEPOOL_OS: "Ubuntu_20.04"
+          DEFAULT_UBUNTU_NODEPOOL_OS: "Ubuntu_18.04"
           DEFAULT_NODEPOOL_NUMBEROFNODES: 200
           DEFAULT_NODEPOOL_REGION: "ap-south-1"
           DEFAULT_NODEPOOL_ARCHITECTURE: "x86_64"
@@ -4757,6 +3149,10 @@ pipelines:
             description: "Skip all the tests matching the grep string. Accepts only true or false"
             default: "true"
             allowCustom: true
+          U18_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_ubuntu_18_static_vm_ip_address}"
+            description: "Ubuntu 18 static vm ip address"
           U20_STATIC_IP_ADDRESS:
             allowCustom: false
             default:  "${res_ubuntu_20_static_vm_ip_address}"
@@ -4972,7 +3368,6 @@ pipelines:
                             core/pipelines/projectIntegrationSharing.js,\
                             core/pipelines/nodePoolSharing.js,\
                             core/workFlow/step/stepWorkflow1.js"
-            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/PowerShellGenericNonDefaultProject.js"
         execution:
           onExecute:
             # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
@@ -5442,7 +3837,7 @@ pipelines:
           gitUser: "PIPA"
           DEFAULT_UBUNTU_NODEPOOL_OS:
             allowCustom: true
-            default: "Ubuntu_20.04"
+            default: "Ubuntu_18.04"
             description: "Default operating system for node pool tests"
           DEFAULT_NODEPOOL_NUMBEROFNODES:
             allowCustom: true
@@ -6024,7 +4419,6 @@ pipelines:
         configuration:
           integrations:
             - name: jfdev_agent
-            - name: dockerDotJfrog
           inputResources:
             - name: auto_gitRepo
               trigger: false
@@ -6339,7 +4733,6 @@ pipelines:
         configuration:
           integrations:
             - name: jfdev_agent
-            - name: dockerDotJfrog
           inputResources:
             - name: auto_gitRepo
               trigger: false
@@ -6648,7 +5041,6 @@ pipelines:
         configuration:
           integrations:
             - name: jfdev_agent
-            - name: dockerDotJfrog
           inputResources:
             - name: auto_gitRepo
               trigger: false
@@ -6730,6 +5122,7 @@ pipelines:
               - neham
               - varshaa
               - jasmeets
+              - agrasthn
             notifications:
               - integrationName: pipelines_itest_slack
           {{ end }}
@@ -6796,6 +5189,27 @@ pipelines:
                     "https://api.github.com/repos/$repo/hooks/$id"
                 done
               done
+      - name: u18_static_node_jenkins
+        type: Jenkins
+        configuration:
+          inputSteps:
+            - name: trigger_all
+          integrations:
+            - name: jenkins_entplus_ci
+            - name: automation_ssh
+          outputResources:
+            - name: ubuntu_18_static_vm
+          jenkinsJobName: tools/job/utils/job/aws-self-service-create-ec2-vm
+          buildParameters:
+            SSH_PUBLIC_KEY: "${int_automation_ssh_publicKey}"
+            VM_NAME: ubuntu18${run_id}
+            GROUP: PIPELINES
+            VM_TYPE: t3.medium
+            VM_IMAGE: ubuntu-18
+            REGION: ap-south-1
+            DISK_SIZE: '10'
+            EXPIRY: 8h
+            AUTO_SHUT_DOWN: 'true'
 
       - name: u20_static_node_jenkins
         type: Jenkins
@@ -7053,7 +5467,7 @@ pipelines:
             DISTRIBUTION: "false"
             INSIGHT: "false"
             DEPLOYMENT_TYPE: "cloud"
-            REGION: "gcdev-2-euw1"
+            REGION: "gcdev-euw1"
             DEBUG_ENVIRONMENT: "true"
             LOGS_TO_KIBANA: "false"
             EXTRA_PARAMS: "artifactory_special_properties=staging.mode=true\nmaster_key=${JPD_JOIN_KEY}\npipelines_signed_pipelines_enabled=true\nconf_pipelines_chart_version=${res_nightlyEnvDetails_helmchartversion}\nconf_pipelines_unified_version=${res_nightlyEnvDetails_version}\nwhitelist_cidr=20.184.243.216/32;146.148.8.199/32;20.245.102.218;104.192.136.0/21;185.166.140.0/22;18.205.93.0/25;18.234.32.128/25;13.52.5.0/25;34.74.90.64/28;34.74.226.0/24\npipelines_rabbitmq_persistence_enabled=true\npipelines_auth_token=Testing1234\nis_newrelic=True\napplication_sizing_type=xlarge\neplus_mothership_jfmc_deployed=true\nfeature_pipelines_saas_custom_dynamic_node_pools_enabled=true\npipelines_split_to_pods=false"
@@ -7122,6 +5536,7 @@ pipelines:
             - name: entArt
           inputSteps:
             - name: itest_1
+            - name: u18_static_node_jenkins
             - name: u20_static_node_jenkins
             - name: centos7_static_node_jenkins
           inputResources:
@@ -7605,94 +6020,6 @@ pipelines:
             - write_output "cypressTest" "JPD_JOIN_KEY=$JPD_JOIN_KEY"
             - write_output "cypressTest" "JPD_PASSWORD=$PASSWORD"
 
-  - name: playwright
-    configuration:
-     integrations:
-      - name: entplus_deployer
-      - name: test_automation
-      - name: test_automation_token
-      - name: test_automation_bbs_new
-      - name: KubeFile_automation
-      - name: entArt
-      - name: lightweight_automation_generic
-      - name: test_automation_jira
-      - name: pipelines_mqtest_slack
-      - name: az_jfrog_new
-      - name: automation_ssh
-      - name: test_automation_bitbucket
-      - name: s_gitHub
-      - name: automation_bbs_aps
-    steps:
-     - name: playwright_ui_automation
-       type: Bash
-       configuration: 
-        inputResources:
-         - name: cypress_gitRepo
-        environmentVariables:
-         keyPairName:
-          allowCustom: true
-          default: ''
-         baseURL:
-          allowCustom: true
-          default: ''
-         URL:
-          description: "BBS url"
-          default: "${int_test_automation_bbs_new_url}"
-          allowCustom: true
-         accessId:
-          description: "BBS username"
-          default: "${int_test_automation_bbs_new_username}"
-          allowCustom: true
-         TOKEN:
-          description: "BBS token"
-          default: "${int_test_automation_bbs_new_password}"
-          allowCustom: true
-         JSON_KEY:
-          allowCustom: true
-          default: '' 
-         password:
-          allowCustom: true
-          default: ''
-         INTEGRATION:
-          allowCustom: true
-          default: 'NODEPOOLINTEGRATION'
-         accessKey:
-          allowCustom: true
-          default: ''
-         AWS_PROJECT_INTEGRATION_ACCESSKEYID:
-          description: "Default AWS access key-id"
-          default: "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}" 
-          values:
-            - "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}"
-            - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_ACCESSKEYID}"
-          allowCustom: true
-         AWS_PROJECT_INTEGRATION_SECRETACCESSKEY:
-          description: "Default AWS ecret access-key"
-          default: "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
-          values:
-            - "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
-            - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_SECRETACCESSKEY}"
-          allowCustom: true  
-         AWS_NODEPOOL_KEYPAIRNAME:
-          description: "AWS key-pair"
-          default: "dev2cloud-pp-aps1-nodepool"
-          allowCustom: true    
-       execution:
-        onStart:
-         - node -v
-         - pushd $res_cypress_gitRepo_resourcePath/automation/releaseUiAutomation
-         - mkdir -p /tmp/npm_cache
-         - restore_pipeline_files npm_cache /tmp/npm_cache/         
-         - npm config set registry https://entplus.jfrog.io/artifactory/api/npm/npm-virtual
-         - curl -u"${int_entplus_deployer_user}":"${int_entplus_deployer_apikey}" "https://entplus.jfrog.io/api/npm/auth" >> ~/.npmrc
-         - npm config fix
-         - npm ci
-         - npx playwright install
-         - npx playwright install-deps
-         - npm test
-        onExecute:
-         - echo "on execute from YAML" 
-
   - name: cypress
     configuration:
       integrations:
@@ -7823,14 +6150,14 @@ pipelines:
           JFROG_JOIN_KEY: "$res_itestMisc_JPD_JOIN_KEY"
           DEFAULT_NODE_POOL_NAME:
             allowCustom: true
-            default: u20dynamic
+            default: u18dynamic
             description: "Default nodePool"
           #by default this is set to node pool with name `u16dynamic`
           gitUser: "PIPA"
           PREP_BUILDNODES: "true"
           DEFAULT_UBUNTU_NODEPOOL_OS:
             allowCustom: true
-            default: "Ubuntu_20.04"
+            default: "Ubuntu_18.04"
             description: "Default operating system for node pool tests"
           DEFAULT_NODEPOOL_NUMBEROFNODES:
             allowCustom: true
@@ -8001,6 +6328,10 @@ pipelines:
             description: "Upload helm test files to artifactory for running helm test cases"
             default: "true"
             allowCustom: true
+          U18_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_ubuntu_18_static_vm_ip_address}"
+            description: "Ubuntu 18 static vm ip address"
           U20_STATIC_IP_ADDRESS:
             allowCustom: false
             default:  "${res_ubuntu_20_static_vm_ip_address}"
@@ -8074,8 +6405,6 @@ pipelines:
           GITHUB_REPOSITORY_FULLPATH: "jfrog/Org_test_Automation"
           GITHUB_MULTIBRANCH_REPOSITORY_FULL_NAME: "jfrog/org_test_automation_MultiBranch"
           BITBUCKETSERVER_REPOSITORY_FULLPATH_POWERSHELL: "PIPA/Org_test_Automation_PowerShell"
-          AWS_NODEPOOL_REGION: "ap-south-1"
-          GITHUB_REPOSITORY_FULLPATH_BASH_BRANCH: "master"
       integrations:
         - name: test_automation
         - name: test_automation_token
@@ -8325,6 +6654,7 @@ pipelines:
             - listOfTests: "core/steps/PowerShell/PSResources/PowerShellRemoteFileResource.js"
             - listOfTests: "core/steps/PowerShell/PSResources/PowerShellResources.js"
             - listOfTests: "core/steps/PowerShell/PSResources/PowerShellVmClusterResource.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/PowerShellGenericNonDefaultProject.js"
         execution:
           onExecute:
             # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
@@ -8451,6 +6781,8 @@ pipelines:
       nodePool: pipelines_testing
       chronological: true
       inputResources:
+        - name: ubuntu_18_static_vm
+          trigger: false
         - name: ubuntu_20_static_vm
           trigger: false
         - name: redhat_7_static_vm
@@ -8491,7 +6823,7 @@ pipelines:
           # LOCAL_STATE_FILE_PATH: "/tmp/$steplet_number"
           DEFAULT_UBUNTU_NODEPOOL_OS:
             allowCustom: true
-            default: "Ubuntu_20.04"
+            default: "Ubuntu_18.04"
             description: "Default operating system for node pool tests"
           DEFAULT_NODEPOOL_NUMBEROFNODES:
             allowCustom: true
@@ -8652,12 +6984,16 @@ pipelines:
             allowCustom: true
           DEFAULT_NODE_POOL_NAME:
             allowCustom: true
-            default: u20dynamic
+            default: u18dynamic
             description: "Default nodePool"
           PREP_FOR_HELM_TESTS:
             description: "Upload helm test files to artifactory for running helm test cases"
             default: "false"
             allowCustom: true
+          U18_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_ubuntu_18_static_vm_ip_address}"
+            description: "Ubuntu 18 static vm ip address"
           U20_STATIC_IP_ADDRESS:
             allowCustom: false
             default:  "${res_ubuntu_20_static_vm_ip_address}"
@@ -8741,7 +7077,6 @@ pipelines:
           GITHUB_REPOSITORY_FULLPATH: "jfrog/Org_test_Automation"
           GITHUB_MULTIBRANCH_REPOSITORY_FULL_NAME: "jfrog/org_test_automation_MultiBranch"
           REPOSITORY_FULL_NAME_BBS: "PIPA/Org_test_Automation"
-          FRESH_INSTALL: "true"
       integrations:
         - name: test_automation
         - name: test_automation_token
@@ -8872,9 +7207,7 @@ pipelines:
             - listOfTests: "core/api/auth.js"
             - listOfTests: "core/api/buildPlaneImages.js"
             - listOfTests: "core/api/buildPlaneMessages.js"
-            - listOfTests: "core/api/buildBadges.js"
             - listOfTests: "core/api/cancelRun.js"
-            - listOfTests: "core/api/containerConnection.js"
         execution:
           onExecute:
             - echo "Executing matrix step on ${steplet_id}"
@@ -8932,7 +7265,6 @@ pipelines:
         stepletMultipliers:
           environmentVariables:
             - listOfTests: "core/api/deployKeys.js"
-            - listOfTests: "core/api/disabledEntities.js"
             - listOfTests: "core/api/dynamicNodesMachineTypes.js"
             - listOfTests: "core/api/environmentVariables.js"
             - listOfTests: "core/api/events.js"
@@ -8995,8 +7327,6 @@ pipelines:
             - listOfTests: "core/api/identities.js"
             - listOfTests: "core/api/identityFavorites.js"
             - listOfTests: "core/api/identityRoles.js"
-            - listOfTests: "core/api/initializers.js"
-            - listOfTests: "core/api/inUseBy.js"
             - listOfTests: "core/api/locks.js"
         execution:
           onExecute:
@@ -9055,6 +7385,8 @@ pipelines:
         stepletMultipliers:
           environmentVariables:
             - listOfTests: "core/api/metrics.js"
+            - listOfTests: "core/api/microPipelineEvents.js"
+            - listOfTests: "core/api/microPipelines.js"
             - listOfTests: "core/api/nodePools.js"
             - listOfTests: "core/api/nodes.js"
         execution:
@@ -9231,7 +7563,7 @@ pipelines:
           environmentVariables:
             - listOfTests: "core/api/pipelineSteplets.js"
             - listOfTests: "core/api/pipelineSteps.js"
-            # - listOfTests: "core/api/pipelineSteps2.js" //runnning for 1 hour 31 mins
+            - listOfTests: "core/api/pipelineSteps2.js"
             - listOfTests: "core/api/pipelineSyncStatus.js"
             - listOfTests: "core/api/project.js"
         execution:
@@ -9347,10 +7679,9 @@ pipelines:
             - name: entArt
         stepletMultipliers:
           environmentVariables:
-            - listOfTests: "core/api/retiredTemplate.js"
             - listOfTests: "core/api/runResourceVersions.js"
             - listOfTests: "core/api/runs.js"
-            - listOfTests: "core/api/signedPipeline.js"
+            - listOfTests: "core/api/runStepConnections.js"
             - listOfTests: "core/api/stepArtifacts.js"
             - listOfTests: "core/api/stepConsoles.js"
         execution:
@@ -9407,12 +7738,12 @@ pipelines:
             - name: entArt
         stepletMultipliers:
           environmentVariables:
-            - listOfTests: "core/api/stepContextTabs.js"
             - listOfTests: "core/api/stepletConsoles.js"
             - listOfTests: "core/api/steplets.js"
             - listOfTests: "core/api/stepletTestReports.js"
             - listOfTests: "core/api/steps.js"
             - listOfTests: "core/api/stepTestReports.js"
+            - listOfTests: "core/api/stepContextTabs.js"
         execution:
           onExecute:
             - echo "Executing matrix step on ${steplet_id}"
@@ -9527,12 +7858,11 @@ pipelines:
         stepletMultipliers:
           environmentVariables:
             - listOfTests: "core/api/systemHealth.js"
-            # TODO: These tests cant be run using dev2cloud instances
-            # - listOfTests: "core/api/systemLiveLogs.js"
+            - listOfTests: "core/api/systemLiveLogs.js"
             # TODO: will be uncomented once PIPE-10435 is fixed
             # - listOfTests: "core/api/systemServiceInstances.js"
             - listOfTests: "core/api/systemServices.js"
-            - listOfTests: "core/api/templateList.js"
+            - listOfTests: "core/api/templates.js"
             - listOfTests: "core/api/templates.js"
         execution:
           onExecute:
@@ -9588,14 +7918,16 @@ pipelines:
             - name: entArt
         stepletMultipliers:
           environmentVariables:
-            - listOfTests: "core/api/templateSources.js"
             - listOfTests: "core/api/testElements.js"
             - listOfTests: "core/api/validateYaml.js"
             - listOfTests: "core/api/validateYaml2.js"
             - listOfTests: "core/api/validateTemplate.js"
+            - listOfTests: "core/api/templateList.js"
+            - listOfTests: "core/api/inUseBy.js"
             - listOfTests: "core/api/webhook.js"
             - listOfTests: "core/api/windowStaticNodePools.js"
             - listOfTests: "core/api/userViews.js"
+            - listOfTests: "core/api/disabledEntities.js"
         execution:
           onExecute:
             - echo "Executing matrix step on ${steplet_id}"
@@ -9914,24 +8246,26 @@ pipelines:
             - listOfTests: "core/api/buildPlaneMessages.js"
             - listOfTests: "core/api/cancelRun.js"
             - listOfTests: "core/api/events.js"
-            - listOfTests: "core/api/environmentVariablesND.js"
             - listOfTests: "core/api/extensionSources.js"
+            - listOfTests: "core/api/hooks.js"
             - listOfTests: "core/api/identities.js"
             - listOfTests: "core/api/identityFavorites.js"
             - listOfTests: "core/api/identityRoles.js"
             - listOfTests: "core/api/locks.js"
             - listOfTests: "core/api/metrics.js"
+            - listOfTests: "core/api/microPipelineEvents.js"
+            - listOfTests: "core/api/microPipelines.js"
             - listOfTests: "core/api/nodePools.js"
             - listOfTests: "core/api/nodes.js"
             - listOfTests: "core/api/nodeStats.js"
             - listOfTests: "core/api/passthrough_pipeInfo.js"
-            - listOfTests: "core/api/passthroughND.js"
+            - listOfTests: "core/api/passthrough.js"
             - listOfTests: "core/api/passthroughAssignPermission.js"
             - listOfTests: "core/api/passthroughPermission.js"
             - listOfTests: "core/api/pipelineObjects.js"
             - listOfTests: "core/api/pipelines.js"
+            - listOfTests: "core/api/pipelineSourceObjectPermissions.js"
             - listOfTests: "core/api/pipelineStepConnections.js"
-            - listOfTests: "core/api/pipelineSourcesND.js"
         execution:
           onExecute:
             - echo "Executing matrix step on ${steplet_id}"
@@ -9998,15 +8332,15 @@ pipelines:
             - listOfTests: "core/api/project.js"
             - listOfTests: "core/api/projectPermissions.js"
             - listOfTests: "core/api/providers.js"
-            - listOfTests: "core/api/resourcesND.js"
-            - listOfTests: "core/api/resourceVersionsND.js"
+            - listOfTests: "core/api/resources.js"
+            - listOfTests: "core/api/resourceVersions.js"
             - listOfTests: "core/api/runResourceVersions.js"
-            - listOfTests: "core/api/runsND.js"
+            - listOfTests: "core/api/runs.js"
             - listOfTests: "core/api/runStepConnections.js"
             - listOfTests: "core/api/stepArtifacts.js"
             - listOfTests: "core/api/stepConsoles.js"
             - listOfTests: "core/api/stepletConsoles.js"
-            - listOfTests: "core/api/stepletsND.js"
+            - listOfTests: "core/api/steplets.js"
             - listOfTests: "core/api/stepletTestReports.js"
             - listOfTests: "core/api/steps.js"
             - listOfTests: "core/api/stepTestReports.js"
@@ -10019,7 +8353,7 @@ pipelines:
             - listOfTests: "core/api/systemLiveLogs.js"
             - listOfTests: "core/api/systemServiceInstances.js"
             - listOfTests: "core/api/systemServices.js"
-            # - listOfTests: "core/api/templates.js" #skipping few tests for non default
+            - listOfTests: "core/api/templates.js"
             - listOfTests: "core/api/templates.js"
             - listOfTests: "core/api/templateSources.js"
             - listOfTests: "core/api/testElements.js"
@@ -10065,7 +8399,6 @@ pipelines:
           nodePool: pipelines_u20
           integrations:
             - name: jfdev_agent
-            - name: dockerDotJfrog
           inputResources:
             - name: auto_gitRepo
               trigger: false
@@ -10149,6 +8482,7 @@ pipelines:
         stepletMultipliers:
           nodePools:
             - pipelines_installer_u20_testing
+            - pipelines_installer_u18_testing
             - pipelines_installer_c7_testing
           runtimes:
             - type: host
@@ -10265,168 +8599,4 @@ pipelines:
           onExecute:
             - echo "Approved!"
 {{ end }}
-{{ if or (hasPrefix "preRelease" "{{gitBranch}}") (hasSuffix "full" "{{gitBranch}}") }}
-  - name: approve_for_release_AZ
-    steps:
-      - name: approve_for_release_AZ
-        type: bash
-        configuration:
-          requiresApproval:
-            approvers:
-              - jasmeets
-              - ambrishs
-          inputResources:
-            - name: azureReleaseApprovalBag
-        execution:
-          onExecute:
-            - echo "Approved!"
-{{ end }}
-{{ if or (hasPrefix "preRelease" "{{gitBranch}}") (hasSuffix "full" "{{gitBranch}}") }}
-  - name: approve_for_release_cypress
-    steps:
-      - name: approve_for_release_cypress
-        type: bash
-        configuration:
-          requiresApproval:
-            approvers:
-              - jasmeets
-              - ambrishs
-          inputResources:
-            - name: cypressReleaseApprovalBag
-        execution:
-          onExecute:
-            - echo "Approved!"
-{{ end }}
-{{ if or (hasPrefix "preRelease" "{{gitBranch}}") (hasSuffix "full" "{{gitBranch}}") }}
-  - name: approve_for_release_API
-    steps:
-      - name: approve_for_release_API
-        type: bash
-        configuration:
-          requiresApproval:
-            approvers:
-              - jasmeets
-              - ambrishs
-          inputResources:
-            - name: apiReleaseApprovalBag
-        execution:
-          onExecute:
-            - echo "Approved!"
-{{ end }}
-{{ if or (hasPrefix "preRelease" "{{gitBranch}}") (hasSuffix "full" "{{gitBranch}}") }}
-  - name: approve_for_release_misc
-    steps:
-      - name: approve_for_release_misc
-        type: bash
-        configuration:
-          requiresApproval:
-            approvers:
-              - jasmeets
-              - ambrishs
-          inputResources:
-            - name: miscReleaseApprovalBag
-        execution:
-          onExecute:
-            - echo "Approved!"
-{{ end }}
-{{ if or (hasPrefix "preRelease" "{{gitBranch}}") (hasSuffix "full" "{{gitBranch}}") }}
-  - name: approve_for_release_webhook
-    steps:
-      - name: approve_for_release_webhook
-        type: bash
-        configuration:
-          requiresApproval:
-            approvers:
-              - jasmeets
-              - ambrishs
-          inputResources:
-            - name: webhookReleaseApprovalBag
-        execution:
-          onExecute:
-            - echo "Approved!"
-{{ end }}
-{{ if eq "master" "{{gitBranch}}" }}
-  - name: pipelines_health_check_canary
-    steps:
-      - name: health_check_step
-        type: bash
-        configuration:
-          inputResources:
-            - name: canaryPipelineTrigger
-          integrations:
-            - name: slack_pipelines_alert
-          nodePool: pipelines_testing
-        execution:
-          onExecute:
-            - echo "basic pipeline step ran successfully"
-          onFailure:
-            - send_notification slack_pipelines_alert --text "Pipeline - $pipeline_name failed for master branch\nURL - $step_url" --color "#FF0000"
-{{ end }}
 
-  - name: uiSystemTests
-    configuration:
-      integrations:
-        - name: entArt
-        - name: entplus_deployer
-    steps:
-      - name: uiTests
-        type: Bash
-        configuration:
-          runtime:
-            type: image
-            image:
-              custom:
-                name: mcr.microsoft.com/playwright
-                tag: v1.39.0-jammy
-          inputResources:
-            - name: cypress_gitRepo
-              trigger: false
-          environmentVariables:
-            BASE_URL:
-              allowCustom: true
-              default:  "https://master.jfrogdev.org/ui/login"
-              description: "URL of the intance against which you want to trigger UI system test suite"
-        execution:
-          onStart:
-            - node -v
-            - pushd $res_cypress_gitRepo_resourcePath/services/frontend/e2e/uiTests
-            - mkdir -p /tmp/npm_cache
-            - restore_pipeline_files npm_cache /tmp/npm_cache/
-            - jfrog rt npmc --server-id-resolve entArt --repo-resolve npm-virtual
-            - jfrog rt npmci
-            - add_pipeline_files /tmp/npm_cache npm_cache
-            - npm run ui:systemTests
-
-  - name: uiUnitTests
-    configuration:
-      integrations:
-        - name: entArt
-        - name: entplus_deployer
-    steps:
-      - name: uiTests
-        type: Bash
-        configuration:
-          runtime:
-            type: image
-            image:
-              custom:
-                name: mcr.microsoft.com/playwright
-                tag: v1.39.0-jammy
-          inputResources:
-            - name: cypress_gitRepo
-              trigger: false
-          environmentVariables:
-            BASE_URL:
-              allowCustom: true
-              default:  "https://master.jfrogdev.org/ui/login"
-              description: "URL of the intance against which you want to trigger UI unit test suite"
-        execution:
-          onStart:
-            - node -v
-            - pushd $res_cypress_gitRepo_resourcePath/services/frontend/e2e/uiTests
-            - mkdir -p /tmp/npm_cache
-            - restore_pipeline_files npm_cache /tmp/npm_cache/
-            - jfrog rt npmc --server-id-resolve entArt --repo-resolve npm-virtual
-            - jfrog rt npmci
-            - add_pipeline_files /tmp/npm_cache npm_cache
-            - npm run ui:systemTests

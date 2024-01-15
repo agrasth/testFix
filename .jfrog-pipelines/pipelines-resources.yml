@@ -387,16 +387,6 @@ resources:
       recursive: false
       flat: true
 
-  - name: pipe_master_wh
-    type: IncomingWebhook
-    configuration:
-      webhookName: deployMaster
-
-  - name: pipe_rc_wh
-    type: IncomingWebhook
-    configuration:
-      webhookName: deployRC
-
   - name: autoScripts
     type: GitRepo
     configuration:
@@ -542,21 +532,6 @@ resources:
       gitProvider: JFrog_bitbucket
       branches:
         include: ^master$
-
-  - name: helm_build_wh
-    type: OutgoingWebhook
-    configuration:
-      webhookName: pipelines_helm_build
-      method: POST
-      headers:
-        Content-type: "application/json"
-
-  - name: pipelines_helm_build_info
-    type: BuildInfo
-    configuration:
-      sourceArtifactory: entArt
-      buildName: pipelines_helm
-      buildNumber: ${run_id}
 
   - name: auto_e2e_gitRepo
     type: GitRepo
