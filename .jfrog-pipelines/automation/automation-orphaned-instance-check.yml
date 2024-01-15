@@ -1,0 +1,69 @@
+pipelines:
+{{ if eq "master" "{{gitBranch}}" }}
+  - name: check_unused_instances
+    steps:
+      - name: dev2cloud_orphaned_instances
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          inputResources:
+            - name: auto_gitRepo
+              trigger: false
+            - name: nightlyAutomationBuild
+          integrations:
+            - name: aws_dev_ec2
+            - name: aws_prod_ec2_report
+            - name: dev2cloud_cleanup_service_account
+            - name: entplus_deployer
+            - name: slack_pipelines_namespace_cleanup_alert
+            - name: pipelines_cleanup_jira_integration
+            - name: dev_narcissus
+        execution:
+          onExecute:
+            - curl -OJL -u "${int_entplus_deployer_user}":"${int_entplus_deployer_apikey}" https://entplus.jfrog.io/artifactory/proden-binary-releases-local/narc_cli/1.1.9/narc_cli_Linux_x86_64.tar.gz
+            - tar -xvf narc_cli_Linux_x86_64.tar.gz 
+            - export JFROG_SERVER_ENVIRONMENT=development
+            - export NARCISSUS_TOKEN=${int_dev_narcissus_token}
+            - cp narc_cli ${res_auto_gitRepo_resourcePath}/.jfrog-pipelines/automation/ec2-instance-alert/
+            - cd ${res_auto_gitRepo_resourcePath}/.jfrog-pipelines/automation/ec2-instance-alert
+            - chmod +x narc_cli
+            - pip3 install -r dev2cloud-pip-requirements.txt
+            - echo ${int_dev2cloud_cleanup_service_account_jsonKey} > credentials.json
+            - echo "Checking for pipeline instances that are older than 10 days"
+            - MESSAGE=$(python3 -W ignore ec2-instance-cleanup-alert.py --access-key ${int_aws_dev_ec2_AWS_DEV_CI_REGISTRY_ACCESS_KEY_ID} --secret-key ${int_aws_dev_ec2_AWS_DEV_CI_REGISTRY_SECRET_ACCESS_KEY} --environment "DEV2CLOUD" --tag-key "Group" --tag-value "PIPELINES" --jira_base_url ${int_pipelines_cleanup_jira_integration_url} --jira_email ${int_pipelines_cleanup_jira_integration_username} --jira_token ${int_pipelines_cleanup_jira_integration_token})
+            - export SLACK_MESSAGE="$MESSAGE for DEV2CLOUD"
+            - echo $SLACK_MESSAGE
+          onSuccess:
+            - task: jfrog/slack-notify@latest
+              input:
+                slackIntegration: "slack_pipelines_namespace_cleanup_alert"
+                message: "$SLACK_MESSAGE"
+      - name: prod_orphaned_instances
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          inputResources:
+            - name: auto_gitRepo
+              trigger: false
+            - name: nightlyAutomationBuild
+          integrations:
+            - name: aws_prod_ec2_report
+            - name: dev2cloud_cleanup_service_account
+            - name: entplus_deployer
+            - name: slack_pipelines_namespace_cleanup_alert
+            - name: entplus_access_token
+            - name: pipelines_cleanup_jira_integration
+        execution:
+          onExecute:
+            - cd ${res_auto_gitRepo_resourcePath}/.jfrog-pipelines/automation/ec2-instance-alert
+            - pip3 install -r dev2cloud-pip-requirements.txt
+            - echo ${int_dev2cloud_cleanup_service_account_jsonKey} > credentials.json
+            - MESSAGE=$(python3 -u orphaned-nodes-prod-check.py --access-key ${int_aws_prod_ec2_report_accessKeyId}  --secret-key ${int_aws_prod_ec2_report_secretAccessKey} --environment "PROD" --tag-key "Customer Name" --tag-value "jfrogrepo21" --jpd-endpoint ${int_entplus_access_token_url} --jpd-user-access-token ${int_entplus_access_token_accessToken} --jira_base_url ${int_pipelines_cleanup_jira_integration_url} --jira_email ${int_pipelines_cleanup_jira_integration_username} --jira_token ${int_pipelines_cleanup_jira_integration_token})
+            - export SLACK_MESSAGE="$MESSAGE for PROD"
+            - echo $SLACK_MESSAGE
+          onSuccess:
+            - task: jfrog/slack-notify@latest
+              input:
+                slackIntegration: "slack_pipelines_namespace_cleanup_alert"
+                message: "$SLACK_MESSAGE"
+{{end}}

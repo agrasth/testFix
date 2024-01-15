@@ -1,0 +1,3805 @@
+template: true
+valuesFilePath: ./values.yml
+
+# Template Variables
+{{ $IS_CRITICAL_BRANCH := ternary true false (or ( hasPrefix "master" "{{gitBranch}}" ) ( hasPrefix "preRelease" "{{gitBranch}}" ) ( hasPrefix "release" "{{gitBranch}}" ) ( hasPrefix "milestone" "{{gitBranch}}" )) }}
+{{ $IS_RELEASE_BRANCH := ternary true false (or ( hasPrefix "preRelease" "{{gitBranch}}" ) ( hasPrefix "release" "{{gitBranch}}" ) ( hasPrefix "milestone" "{{gitBranch}}" )) }}
+
+{{ $TRIGGER_POST_RELEASE := ternary true false $IS_RELEASE_BRANCH }}
+{{ $XRAY_SCAN_ENABLED  := ternary true false $IS_CRITICAL_BRANCH }}
+# Note. Is overridden & runs on master ever night
+{{ $CLAM_SCAN_ENABLED  := ternary true false $IS_RELEASE_BRANCH }}
+{{ $QUICK_MODE  := ternary false true $IS_CRITICAL_BRANCH }}
+{{ $ARM_BUILD_ENABLED  := ternary true false $IS_RELEASE_BRANCH }}
+app_build_node_pool: &app_build_node_pool
+                       nodePool: {{ ternary "high_spec_nodes" "pipelines_u20" $ARM_BUILD_ENABLED }}
+# Note. Is overridden & runs on master ever night
+{{ $TRIGGER_NATIVE_STEPS_MSTEST  := ternary true false $IS_RELEASE_BRANCH }}
+#  Sonar is enabled only on development branches
+{{ $SONAR_ENABLED := ternary false true $IS_CRITICAL_BRANCH }}
+git_resource_trigger_condition: &git_resource_trigger_condition
+                                  trigger: {{ ternary false true $IS_CRITICAL_BRANCH }}
+
+pipelines:
+  - name: pipelines_build
+    configuration:
+      retentionPolicy:
+        maxAgeDays: 90
+        minRuns: 90
+      environmentVariables:
+        readOnly:
+          buildPlaneVersion: "1.55.0"
+          CHART_VERSION_OVERRIDE: ""
+          dockerVersion: "20.10.9"
+          dockerComposeVersion: "1.27.4"
+          npmRegistry: "https://entplus.jfrog.io/artifactory/api/npm/npm-virtual"
+          repo21: "https://entplus.jfrog.io"
+          templateTarget: "pipelines-artifacts/template"
+          XRAY_ENABLED: "{{ $XRAY_SCAN_ENABLED }}"
+          XRAY_FAIL_PIPELINES: "true"
+          CHART_TESTING_IMAGE: releases-docker.jfrog.io/charts-ci
+          CHART_TESTING_TAG: 0.1.0
+          HELM_VERSION: v3.8.2
+          KUBEVAL_VERSION: "0.16.1"
+          KUBECTL_VERSION: v1.23.5
+          baseMachineImageVersion: "2.7.4"
+          QUICK_MODE: "{{ $QUICK_MODE }}"
+          CLAM_SCAN_ENABLED: "{{ $CLAM_SCAN_ENABLED }}"
+          TRIGGER_POST_RELEASE: "{{ $TRIGGER_POST_RELEASE }}"
+          DEPLOY_K8S_ENVIRONMENT: "false"
+          SONAR_ENABLED: "{{ $SONAR_ENABLED }}"
+          TRIGGER_NATIVE_STEPS_MSTEST: "{{ $TRIGGER_NATIVE_STEPS_MSTEST }}"
+          pipeBranch: "{{gitBranch}}"
+          ARM_BUILD_ENABLED: "{{ $ARM_BUILD_ENABLED }}"
+      jfrogCliVersion: 2
+      integrations:
+        - name: docker_jfrog_io_reader
+        - name: aws_dev_ec2
+        - name: entplus_jfrog_io_docker
+        - name: entplus_pipelines
+        - name: jfdev_agent
+        - name: slack_dev_foundation_alerts
+        - name: slack_platform_clean_pipeline
+        - name: slack_platform_release_pipeline
+        - name: jira_jfrog
+        - name: security_xray_access_token
+      {{ if eq "master" "{{gitBranch}}" }}
+      inputResources:
+        - name: nightlyBuild
+      outputResources:
+        - name: CP_buildStatusUpdate
+      {{ end }}
+    # {{ if eq "master" "{{gitBranch}}" }}
+    # postRun:
+    #   configuration:
+    #    integrations:
+    #      - name: entplus_deployer
+    #      - name: {{ .Values.statusPage.integration }}
+    #   execution:
+    #     onExecute:
+    #       - task: jfrog/run-status@latest
+    #         id: pipelines_master_status
+    #         input:
+    #           stepFailure: true
+    #     onSuccess:
+    #       - task: jfrog/update-incident@v0.0.1
+    #         id: update_incident
+    #         condition: ${OUT_pipe_run_status} == "success"
+    #         input:
+    #           apiKeysIntegration: {{ .Values.statusPage.integration }}
+    #           componentID: {{ .Values.statusPage.componentId }}
+    #           pageID: {{ .Values.statusPage.pageId }}
+    #     onFailure:
+    #       - task: jfrog/create-incident@v0.0.1
+    #         id: create_incident
+    #         condition: ${OUT_pipe_run_status} == "failure"
+    #         input:
+    #           apiKeysIntegration: {{ .Values.statusPage.integration }}
+    #           componentID: {{ .Values.statusPage.componentId }}
+    #           pageID: {{ .Values.statusPage.pageId }}
+    # {{ end }}
+    steps:
+      - name: trigger_controlplane_builds
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          inputResources:
+            - name: packagesGit
+              trigger: false
+          {{ if eq "master" "{{gitBranch}}" }}
+            - name: pipelines_master
+          {{ end }}
+            - name: releasesFile
+              <<: *git_resource_trigger_condition
+            - name: buildCI
+              trigger: false
+        execution:
+          onStart:
+            - |
+              if [[ "$QUICK_MODE" == "true" ]]; then
+                echo "sending failure update to git because this run was executed in QUICK_MODE"
+                update_commit_status packagesGit --status failure --message "marked as failed due to quick mode" --context $step_name
+              else
+                update_commit_status packagesGit --status success --message "marked as success due to non quick mode" --context $step_name
+              fi
+            - echo pipelines_master
+            - echo $triggeredByResourceName
+            - |
+              if [ $TRIGGER_NATIVE_STEPS_MSTEST == "true" ]; then
+                add_run_variables Enabled_Native_Steps_MSTest="true"
+              elif [ {{gitBranch}} == 'master' &&  $triggeredByResourceName == 'nightlyBuild' ]; then
+                add_run_variables Enabled_Native_Steps_MSTest="true"
+              else
+                add_run_variables Enabled_Native_Steps_MSTest="false"
+              fi
+            - echo "QUICK_MODE - [$QUICK_MODE]"
+            - echo "Enabled_Native_Steps_MSTest - [$Enabled_Native_Steps_MSTest]"
+            - echo "kicking off all install builds"
+            - add_run_variables will_publish_bi="true"
+            {{ if eq "master" "{{gitBranch}}" }}
+            - write_output "CP_buildStatusUpdate" "runId=${run_id}"
+            {{ end }}
+
+      - name: packages_build
+        type: Bash
+        configuration:
+          affinityGroup: packages
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - "16.10.0"
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: packagesGit
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_packagesGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - npm config set registry ${npmRegistry}
+            - export UPDATE_BUILD_STATUS_PACKAGES_BUILD=false
+            - pushd "$res_packagesGit_resourcePath"
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_packagesGit_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - changedFiles=$(git diff-tree --no-commit-id --name-only -r HEAD)
+            - |
+              if echo "$changedFiles" | grep -i 'packages'; then
+                export UPDATE_BUILD_STATUS_PACKAGES_BUILD=true
+                echo "Commit contains the changes for packages folder, hence updating the build status for commit"
+              else
+                echo "Commit doesn't contains the changes for packages folder, hence skipping"
+              fi
+            - popd
+          onExecute:
+            - pushd "$res_packagesGit_resourcePath"
+            - git checkout {{gitBranch}}
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            # nx support affected command that support running command on only changes https://blog.nrwl.io/using-nx-affected-on-ci-d3d2686295a0
+            # On development branches run only affected while on master run eveyrthing https://nx.dev/ci/monorepo-ci-gitlab
+            # Once those are configured, below logic should be changed
+            - npm run build:packages
+            - npm run lint:packages;
+            - npm run test:packages;
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh;
+            - sonar_storeCache packages;
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - export PACKAGES="amqp-client cache cloud configuration core data-access-layer decorators errors http-client http-server internal-clients logger metadata microservice redis scm-external-clients templates utility validators"
+            - |
+                for package in ${PACKAGES}; do
+                  save_tests $res_packagesGit_resourcePath/packages/${package}/${package}-unit.xml
+                done
+            - stepCommons_on_complete
+
+      - name: packages_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: packages
+          integrations:
+            - name: entplus_deployer
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: packagesGit
+              trigger: false
+          inputSteps:
+            - name: packages_build
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_packages'
+            SONAR_PROJECT_BASE_DIR: './packages'
+            SONAR_QUALITYGATE_WAIT: 'false'
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_packagesGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: automation_e2e_build
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          environmentVariables:
+            JFROG_CLI_BUILD_NAME: "pipelines-automation-e2e"
+            JFROG_CLI_BUILD_NUMBER: "${run_id}"
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+          inputResources:
+            - name: auto_e2e_gitRepo
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - pushd $res_auto_e2e_gitRepo_resourcePath/
+            - add_run_variables RELEASE_VERSION=$( ./normalizeReleaseVersion.sh {{gitBranch}} )
+            - source ${res_auto_e2e_gitRepo_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - pushd automation/e2e
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - export e2eImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-automation-e2e"
+            - docker build -t $e2eImageName:$RELEASE_VERSION .
+            - jfrog rt docker-push $e2eImageName:$RELEASE_VERSION $RT_DOCKER_REPO --build-name="$JFROG_CLI_BUILD_NAME" --build-number="$JFROG_CLI_BUILD_NUMBER"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: api_build
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: apiGit
+              <<: *git_resource_trigger_condition
+            - name: buildPlaneFS_cp
+            - name: ootbExtensionsFS_cp
+            - name: node16MicroRunImage
+            - name: node16BuildImage
+            - name: templateFS
+          inputSteps:
+            - name: template_build
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - "16.10.0"
+        execution:
+          onStart:
+            - source ${res_apiGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - add_run_variables RELEASE_VERSION=$( ./normalizeReleaseVersion.sh {{gitBranch}} )
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export apiImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-api"
+          onExecute:
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - pushd $res_apiGit_resourcePath/services/api
+            - mkdir -p bin
+            - echo -n $buildPlaneVersion > ./bin/buildplaneVersion.txt
+            - echo "Release version is ${RELEASE_VERSION}"
+            - ls -atlh ../
+            - cp -vr $res_ootbExtensionsFS_cp_resourcePath/extensions-$buildPlaneVersion.tar.gz ./bin/extensions.tar.gz
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-Ubuntu_18.04-$buildPlaneVersion.deb ./bin/buildPlane-x86_64-Ubuntu_18.04.deb
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-Ubuntu_20.04-$buildPlaneVersion.deb ./bin/buildPlane-x86_64-Ubuntu_20.04.deb
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-ARM64-Ubuntu_20.04-$buildPlaneVersion.deb ./bin/buildPlane-ARM64-Ubuntu_20.04.deb
+            {{- range $build := $.Values.build }}
+              {{- range $build.arch }}
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-{{ .name }}-{{ $build.os }}-$buildPlaneVersion.deb ./bin/buildPlane-{{ .name }}-{{ $build.os }}.deb
+             {{- end}}
+            {{- end}}
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-CentOS_7-$buildPlaneVersion.rpm ./bin/buildPlane-x86_64-CentOS_7.rpm
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-RHEL_7-$buildPlaneVersion.rpm ./bin/buildPlane-x86_64-RHEL_7.rpm
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-RHEL_8-$buildPlaneVersion.rpm ./bin/buildPlane-x86_64-RHEL_8.rpm
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-AmazonLinux_2-$buildPlaneVersion.rpm ./bin/buildPlane-x86_64-AmazonLinux_2.rpm
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-WindowsServer_2019-$buildPlaneVersion.tar.gz ./bin/buildPlane-x86_64-WindowsServer_2019.tar.gz
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-MacOS_13.5-$buildPlaneVersion.tar.gz ./bin/buildPlane-x86_64-MacOS_13.5.tar.gz
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-ARM64-MacOS_12-$buildPlaneVersion.tar.gz ./bin/buildPlane-ARM64-MacOS_12.tar.gz
+            - cp -vr $res_templateFS_resourcePath/pipelines-template-$RELEASE_VERSION-linux-amd64 bin/pipelines-template-linux-amd64
+            - if [[ "${ARM_BUILD_ENABLED}" == "true" ]]; then cp -vr $res_templateFS_resourcePath/pipelines-template-$RELEASE_VERSION-linux-arm64 bin/pipelines-template-linux-arm64; fi;
+            - chmod +x bin/pipelines-template*
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME=$apiImageName \
+              PIPELINES_CORE_VERSION=$PIPELINES_CORE_VERSION \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              MICRO_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag \
+              ./buildApi.sh "${res_apiGit_resourcePath}"
+            - echo "JFROG_CLI_BUILD_NAME [$JFROG_CLI_BUILD_NAME] JFROG_CLI_BUILD_NUMBER [$JFROG_CLI_BUILD_NUMBER]"
+            - add_run_variables API_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - add_run_variables API_BUILD_NAME=$JFROG_CLI_BUILD_NAME
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: api_quality
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: api
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: apiGit
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: trigger_controlplane_builds
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - "16.10.0"
+        execution:
+          onStart:
+            - source ${res_apiGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - pushd $res_apiGit_resourcePath
+            - on_start
+          onExecute:
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - pushd $res_apiGit_resourcePath;
+            - npm config set registry ${npmRegistry}
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_apiGit_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - npm run build:packages;
+            - pushd $res_apiGit_resourcePath;
+            - npm run build:nodepool-client;
+            - npm run lint:api;
+            - npm run test:api;
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - sonar_storeCache services/api;
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - save_tests $res_apiGit_resourcePath/services/api/api-unit.xml
+            - stepCommons_on_complete
+
+      - name: api_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: api
+          integrations:
+            - name: entplus_deployer
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: apiGit
+              trigger: false
+          inputSteps:
+            - name: api_quality
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_api'
+            SONAR_PROJECT_BASE_DIR: './services/api'
+            SONAR_QUALITYGATE_WAIT: 'false'
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_apiGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: api_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          inputSteps:
+            - name: api_build
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-api
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: api_xray_scan
+        type: Bash
+        configuration:
+          condition: 'XRAY_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          inputSteps:
+            - name: api_build
+          inputResources:
+            - name: apiGit
+              trigger: false
+          integrations:
+            - name: entplus_deployer
+        execution:
+          onExecute:
+            - source "${res_apiGit_resourcePath}/build/ci/xray_violation_handler.sh"
+            - run_xray_security_scan "${API_BUILD_NAME}" "${API_BUILD_NUMBER}" || echo "failed to run xray scan"
+        
+      - name: inst_build
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          environmentVariables:
+            FORCE_RUN: 'true'
+          integrations:
+            - name: entplus_deployer
+            - name: entplus_jfrog_io_docker
+          inputResources:
+            - name: installerGit
+              <<: *git_resource_trigger_condition
+            - name: machineImageJSON_fs
+            - name: docker_fs
+            - name: dockerCompose_fs
+            - name: curl_tar_fs
+            - name: curl_rpm_fs
+            - name: ootbExtensionsJSONFS
+            - name: installerBaseImage
+            - name: node16BuildImage
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_installerGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - add_run_variables RT_REPO="npm-virtual"
+            - pushd $res_installerGit_resourcePath/
+            - add_run_variables RELEASE_VERSION=$( ./normalizeReleaseVersion.sh {{gitBranch}} )
+            - pushd installer
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export installerImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-installer"
+            - export nativeBuildName=tar-${JFROG_CLI_BUILD_NAME}
+            - debBuildName=deb-${JFROG_CLI_BUILD_NAME}
+            - rpmBuildName=rpm-${JFROG_CLI_BUILD_NAME}
+          onExecute:
+            - pushd $res_installerGit_resourcePath/installer
+            - echo "validating db tables file list"
+            - $res_installerGit_resourcePath/installer/scripts/tests/db-tables-file-list-check.sh $res_installerGit_resourcePath/installer/scripts/schema/tables
+            - mkdir -p bin dependencies/x86_64/zip/
+            - tar zxvf ${res_docker_fs_resourcePath}/docker-${dockerVersion}.tgz -C dependencies/x86_64/zip/
+            - cp -vr $res_dockerCompose_fs_resourcePath/installer/docker/docker-compose-${dockerComposeVersion} dependencies/x86_64/bin/
+            - mv dependencies/x86_64/bin/docker-compose-${dockerComposeVersion} dependencies/x86_64/bin/docker-compose
+            - chmod 555 dependencies/x86_64/bin/docker-compose
+            - mv $res_curl_tar_fs_resourcePath/curl/curl/7.74.0/curl-7.74.0.tar.gz dependencies/x86_64/deb/
+            - mv $res_curl_rpm_fs_resourcePath/installer/curl/curl-7.29.0-59.el7.x86_64.rpm dependencies/x86_64/yum/
+            - export PIPELINES_VERSION=$RELEASE_VERSION
+            - echo "Release version is ${RELEASE_VERSION}"
+            - dockerTag="$RELEASE_VERSION"
+            - tarFilename="pipelines-$RELEASE_VERSION.tar.gz"
+            - rpmFilename="pipelines-$RELEASE_VERSION.rpm"
+            - debFilename="pipelines-$RELEASE_VERSION.deb"
+            - jfrog rt dl --flat pipelines-artifacts/imagebuilds/base-images/${baseMachineImageVersion}-buildplaneImages.json
+            - cp -vr ${baseMachineImageVersion}-buildplaneImages.json ./bin/buildplaneImages.json
+            - cp -vr $res_ootbExtensionsJSONFS_resourcePath/${buildPlaneVersion}-ootb-extensions.json ./bin/ootb-extensions.json
+            - echo $buildPlaneVersion > bin/buildplaneVersion.txt
+            - echo $RELEASE_VERSION > bin/controlplaneVersion.txt
+            - sudo chmod 1777 /tmp
+            - sudo apt-get update --allow-unauthenticated
+            - sudo apt-get install -y rsync
+            - |
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              IMG_NAME=$installerImageName \
+              IMG_TAG=$RELEASE_VERSION \
+              MICRO_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_installerBaseImage_imageName:$res_installerBaseImage_imageTag \
+              ./build.sh "${res_installerGit_resourcePath}"
+            - echo "Generated Artifacts"
+            - ls -atlh bin/
+            - echo "Successfully built all artifacts"
+            - popd
+            - pushd $res_installerGit_resourcePath/installer
+            - jfrog rt upload bin/$tarFilename pipelines-installers/installer/$tarFilename --build-name=${nativeBuildName} --build-number=${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt upload bin/$debFilename deb-snapshot-local/pool/jfrog-pipelines/$debFilename --deb xenial/main/all --build-name=${debBuildName} --build-number=${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt upload bin/$rpmFilename yum-snapshot-local/jfrog-pipelines/$rpmFilename --build-name=${rpmBuildName} --build-number=${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt build-collect-env ${nativeBuildName} ${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt build-collect-env ${debBuildName} ${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt build-collect-env ${rpmBuildName} ${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt build-add-git ${nativeBuildName} ${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt build-add-git ${debBuildName} ${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt build-add-git ${rpmBuildName} ${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt build-publish ${nativeBuildName} ${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt build-publish ${debBuildName} ${JFROG_CLI_BUILD_NUMBER}
+            - jfrog rt build-publish ${rpmBuildName} ${JFROG_CLI_BUILD_NUMBER}
+            - source "${res_installerGit_resourcePath}/build/ci/xray_violation_handler.sh"
+            - run_xray_security_scan "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" || echo "failed to run xray scan"
+            - run_xray_security_scan "${debBuildName}" "${JFROG_CLI_BUILD_NUMBER}" || echo "failed to run xray scan"
+            - run_xray_security_scan "${rpmBuildName}" "${JFROG_CLI_BUILD_NUMBER}" || echo "failed to run xray scan"
+            - run_xray_security_scan "${nativeBuildName}" "${JFROG_CLI_BUILD_NUMBER}" || echo "failed to run xray scan"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+            - echo "Cleaning up stale docker images"
+            - docker rmi $(docker images -f "dangling=true" -q) || true
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: inst_test
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: installer
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: installerGit
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: inst_build
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - 14
+        execution:
+          onStart:
+            - source ${res_installerGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_installerGit_resourcePath/installer
+            - jfrog rt npm-config --server-id-resolve entplus_deployer --repo-resolve npm-virtual
+            - jfrog rt npm-install
+            - npm test -- --coverage
+            # Sonar Logic Begin
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - sonar_storeCache installer
+            # Sonar Logic End
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: inst_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: installer
+          integrations:
+            - name: entplus_deployer
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: installerGit
+              trigger: false
+          inputSteps:
+            - name: inst_test
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_installer'
+            SONAR_PROJECT_BASE_DIR: './installer'
+            SONAR_QUALITYGATE_WAIT: 'false'
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_installerGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: inst_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          inputSteps:
+            - name: inst_build
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-installer
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+            
+      - name: template_build
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          affinityGroup: template
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: cpGit
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: trigger_controlplane_builds
+          outputResources:
+            - name: templateFS
+          runtime:
+            type: image
+            image:
+              auto:
+                language: go
+                versions:
+                  - {{ .Values.goBuildVersion }}
+        execution:
+          onStart:
+            - source ${res_cpGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_go.sh
+            - pushd $res_cpGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$( ./normalizeReleaseVersion.sh {{gitBranch}} )
+            - pushd template
+            - on_start
+            - go version
+            - echo "Release version is ${RELEASE_VERSION}"
+            - make install
+            - golangci-lint run || true
+            - make test
+            - make ARGS="-ldflags \"-X main.version='$RELEASE_VERSION'\"" build
+            - BIN_FILENAME="pipelines-template-$RELEASE_VERSION-linux-amd64"
+            - jfrog rt upload ${BIN_FILENAME} $templateTarget/$BIN_FILENAME --target-props "vcs.branch={{gitBranch}}"
+            - BIN_FILENAME="pipelines-template-$RELEASE_VERSION-linux-arm64"
+            - jfrog rt upload ${BIN_FILENAME} $templateTarget/$BIN_FILENAME --target-props "vcs.branch={{gitBranch}}"
+            - jfrog rt build-collect-env
+            - jfrog rt build-add-git
+            - jfrog rt build-publish
+            - add_run_variables TEMPLATE_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - add_run_variables TEMPLATE_BUILD_NAME=$JFROG_CLI_BUILD_NAME
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+      
+      - name: template_xray_scan
+        type: Bash
+        configuration:
+          condition: 'XRAY_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          inputSteps:
+            - name: template_build
+          inputResources:
+            - name: templateGit
+              trigger: false
+          integrations:
+            - name: entplus_deployer
+            - name: entplus_jfrog_io_docker
+        execution:
+          onExecute:
+            - source "${res_templateGit_resourcePath}/build/ci/xray_violation_handler.sh"
+            - run_xray_security_scan "${TEMPLATE_BUILD_NAME}" "${TEMPLATE_BUILD_NUMBER}" || echo "failed to run xray scan"
+
+      - name: template_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          nodePool: pipelines_u20_t3small
+          affinityGroup: template
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: templateGit
+              trigger: false
+          inputSteps:
+            - name: template_build
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_template'
+            SONAR_PROJECT_BASE_DIR: './template/'
+            SONAR_QUALITYGATE_WAIT: 'false'
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_templateGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_go.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: micro_build
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - "16.10.0"
+          integrations:
+            - name: entplus_deployer
+          inputSteps:
+            - name: template_build
+          inputResources:
+            - name: microGit
+              <<: *git_resource_trigger_condition
+            - name: ootbExtensionsFS_cp
+            - name: templateFS
+              trigger: false
+            - name: node16MicroRunImage
+            - name: node16BuildImage
+        execution:
+          onStart:
+            - source ${res_microGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_microGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$( ./normalizeReleaseVersion.sh {{gitBranch}} )
+            - echo "Release version is ${RELEASE_VERSION}"
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export microImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-micro"
+          onExecute:       
+            - pushd $res_microGit_resourcePath
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - pushd $res_microGit_resourcePath/micro
+            - mkdir -p bin
+            - cp -vr $res_ootbExtensionsFS_cp_resourcePath/extensions-$buildPlaneVersion.tar.gz bin/extensions.tar.gz
+            - cp -vr $res_templateFS_resourcePath/pipelines-template-$RELEASE_VERSION-linux-amd64 bin/pipelines-template-linux-amd64
+            - if [[ "${ARM_BUILD_ENABLED}" == "true" ]]; then cp -vr $res_templateFS_resourcePath/pipelines-template-$RELEASE_VERSION-linux-arm64 bin/pipelines-template-linux-arm64 ; fi; 
+            - chmod +x bin/pipelines-template*
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME=$microImageName \
+              PIPELINES_CORE_VERSION=$PIPELINES_CORE_VERSION \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              MICRO_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag \
+              ./buildMicro.sh "${res_microGit_resourcePath}"
+            - add_run_variables MICRO_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - add_run_variables MICRO_BUILD_NAME=$JFROG_CLI_BUILD_NAME
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: micro_xray_scan
+        type: Bash
+        configuration:
+          condition: 'XRAY_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          inputSteps:
+            - name: micro_build
+          inputResources:
+            - name: microGit
+              trigger: false
+          integrations:
+            - name: entplus_deployer
+            - name: entplus_jfrog_io_docker
+        execution:
+          onExecute:
+            - source "${res_microGit_resourcePath}/build/ci/xray_violation_handler.sh"
+            - run_xray_security_scan "${MICRO_BUILD_NAME}" "${MICRO_BUILD_NUMBER}" || echo "failed to run xray scan"
+
+      - name: micro_quality
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: micro
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - "16.10.0"
+          integrations:
+            - name: entplus_deployer
+          inputSteps:
+            - name: template_build
+          inputResources:
+            - name: microGit
+              <<: *git_resource_trigger_condition
+            - name: templateFS
+              trigger: false
+        execution:
+          onStart:
+            - source ${res_microGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - on_start
+          onExecute:
+            - pushd $res_microGit_resourcePath
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - npm config set registry ${npmRegistry}
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_microGit_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - npm run build:packages;
+            - npm run lint -w micro;
+            - npm run test -w micro;
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh;
+            - sonar_storeCache micro;
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - save_tests $res_microGit_resourcePath/micro/micro-unit.xml
+            - stepCommons_on_complete
+
+      - name: mstest_setup
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: msTest
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - "16.10.0"
+          integrations:
+            - name: entplus_deployer
+          inputSteps:
+            - name: template_build
+          inputResources:
+            - name: bddGit_pipelineSync
+              <<: *git_resource_trigger_condition
+            - name: templateFS
+              trigger: false
+        execution:
+          onStart:
+            - source ${res_bddGit_pipelineSync_resourcePath}/build/ci/pipelines_step_setup.sh
+            - npm config set registry ${npmRegistry}
+            - pushd "$res_bddGit_pipelineSync_resourcePath"
+            - add_run_variables RELEASE_VERSION=$( ./normalizeReleaseVersion.sh {{gitBranch}} )
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_bddGit_pipelineSync_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - cp -vr $res_templateFS_resourcePath/pipelines-template-$RELEASE_VERSION-linux-amd64 template/template && chmod +x template/template
+          onExecute:
+            - npm run build:packages
+            - npm run lint -w tools/ms-testing-library
+            - npm run build -w tools/ms-testing-library
+            - npm run lint -w bdd
+            - cp -R . $shared_workspace
+          onSuccess:            
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: mstest_pipelines_sync
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: msTest
+          inputSteps:
+            - name: template_build
+            - name: mstest_setup
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: bddGit_pipelineSync
+              <<: *git_resource_trigger_condition
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - 16
+        execution:
+          onStart:
+            - source ${res_bddGit_pipelineSync_resourcePath}/build/ci/pipelines_step_setup.sh
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - working_dir=/tmp/workspace_${steplet_number}
+            - mkdir -p ${working_dir}
+            - cp -r $shared_workspace/* ${working_dir}
+            - source ${working_dir}/build/ci/pipelines_step_setup.sh
+          onExecute:
+            - pushd ${working_dir}/bdd
+            - npm run bdd:pipelineSync --tags="@ConfigFolder or @NonSCM or @MultiBranch or @Update or @WorkFlow or @Resource_set or @Templates"
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: mstest_pipeline_sync_nativeStep
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false" &&  Enabled_Native_Steps_MSTest == "true"'
+          affinityGroup: msTest
+          inputSteps:
+            - name: template_build
+            - name: mstest_setup
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: bddGit_pipelineSync
+              <<: *git_resource_trigger_condition
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - 16
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTags: "@NativeStep_set1"
+            - listOfTags: "@NativeStep_set2"
+            - listOfTags: "@NativeStep_set3"
+            - listOfTags: "@NativeStep_set4"
+            - listOfTags: "@NativeStep_set5"
+            - listOfTags: "@NativeStep_set6"
+        execution:
+          onStart:
+            - source ${res_bddGit_pipelineSync_resourcePath}/build/ci/pipelines_step_setup.sh
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - working_dir=/tmp/workspace_${steplet_number}
+            - mkdir -p ${working_dir}
+            - cp -r $shared_workspace/* ${working_dir}
+            - source ${working_dir}/build/ci/pipelines_step_setup.sh
+          onExecute:
+            - pushd ${working_dir}/bdd
+            - npm run bdd:pipelineSync --tags="$listOfTags"
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: mstest_cron
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: bddGit
+              <<: *git_resource_trigger_condition
+            - name: templateFS
+          inputSteps:
+            - name: template_build
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - 16
+        execution:
+          onStart:
+            - source ${res_bddGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - npm config set registry ${npmRegistry}
+            - curl -u"${int_entplus_deployer_user}":"${int_entplus_deployer_apikey}" "${int_entplus_deployer_url}/api/npm/auth" >> ~/.npmrc
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - pushd $res_bddGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$( ./normalizeReleaseVersion.sh {{gitBranch}} )
+            - echo "Release version is ${RELEASE_VERSION}"
+            - npm ci --no-audit --no-fund --ignore-scripts
+            - npm run build:packages
+            - npm run build -w tools/ms-testing-library
+            - on_start
+          onExecute:
+            - pushd $res_bddGit_resourcePath
+            - cp -vr $res_templateFS_resourcePath/pipelines-template-$RELEASE_VERSION-linux-amd64 template/template
+            - chmod +x template/template
+            - npm run build -w tools/ms-testing-library
+            - npm run build:micro
+            - pushd bdd
+            - npm run bdd:cron
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: mstest_hookhandler
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          integrations:
+            - name: entplus_deployer
+          inputSteps:
+            - name: template_build
+          inputResources:
+            - name: bddGit
+              <<: *git_resource_trigger_condition
+            - name: templateFS
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - 16
+        execution:
+          onStart:
+            - source ${res_bddGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - npm config set registry ${npmRegistry}
+            - curl -u"${int_entplus_deployer_user}":"${int_entplus_deployer_apikey}" "${int_entplus_deployer_url}/api/npm/auth" >> ~/.npmrc
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - pushd $res_bddGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$( ./normalizeReleaseVersion.sh {{gitBranch}} )
+            - echo "Release version is ${RELEASE_VERSION}"
+            - npm ci --no-audit --no-fund --ignore-scripts
+            - npm run build:packages
+            - on_start
+          onExecute:
+            - pushd $res_bddGit_resourcePath
+            - cp -vr $res_templateFS_resourcePath/pipelines-template-$RELEASE_VERSION-linux-amd64 template/template
+            - chmod +x template/template
+            - npm run build -w tools/ms-testing-library
+            - npm run build:micro
+            - pushd bdd
+            - npm run bdd:hookHandler
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: micro_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: micro
+          integrations:
+            - name: entplus_deployer
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: microGit
+              trigger: false
+          inputSteps:
+            - name: micro_quality
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_micro'
+            SONAR_PROJECT_BASE_DIR: './micro/'
+            SONAR_QUALITYGATE_WAIT: 'false'
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_microGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: micro_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          inputSteps:
+            - name: micro_build
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-micro
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: msg_build_publish
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          affinityGroup: msg
+          environmentVariables:
+            SKIP_DOCKER_RESOURCES_CLEANUP: "true"
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+          inputResources:
+            - name: msgGit
+              <<: *git_resource_trigger_condition
+          outputResources:
+            - name: msgBuildInfo
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_msgGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_msgGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd installer/dependencies/docker/msg
+            - on_start
+          onExecute:
+            - task: jfrog/docker-build@v0.0.1
+              repository: pipelines-tasks-virtual
+              input:
+                resourceName: msgGit
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-msg:${RELEASE_VERSION}"
+                dockerFileName: Dockerfile
+                dockerFileLocation: installer/dependencies/docker/msg
+            - task: jfrog/docker-push@v0.0.2
+              repository: pipelines-tasks-virtual
+              input:
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-msg:${RELEASE_VERSION}"
+                autoPublishBuildInfo: "true"
+                xrayScan: "$XRAY_SCAN_ENABLED"
+                failOnScan: "$XRAY_FAIL_PIPELINES"
+                outputBuildInfoResourceName: "msgBuildInfo"
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: msg_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          affinityGroup: msg
+          inputSteps:
+            - name: msg_build_publish
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-msg
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: redis_build_publish
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          affinityGroup: redis
+          environmentVariables:
+            SKIP_DOCKER_RESOURCES_CLEANUP: "true"
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+          inputResources:
+            - name: redisGit
+              <<: *git_resource_trigger_condition
+          outputResources:
+            - name: redisBuildInfo
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_redisGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_redisGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd installer/dependencies/docker/redis
+            - on_start
+          onExecute:
+            - task: jfrog/docker-build@v0.0.1
+              repository: pipelines-tasks-virtual
+              input:
+                resourceName: redisGit
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-redis:${RELEASE_VERSION}"
+                dockerFileName: Dockerfile
+                dockerFileLocation: installer/dependencies/docker/redis
+            - task: jfrog/docker-push@v0.0.2
+              repository: pipelines-tasks-virtual
+              input:
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-redis:${RELEASE_VERSION}"
+                autoPublishBuildInfo: "true"
+                xrayScan: ${XRAY_ENABLED}
+                failOnScan: ${XRAY_FAIL_PIPELINES}
+                outputBuildInfoResourceName: "redisBuildInfo"
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: redis_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          affinityGroup: redis
+          inputSteps:
+            - name: redis_build_publish
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-redis
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: observability_build_publish
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          nodePool: pipelines_u20_t3small
+          affinityGroup: observability
+          environmentVariables:
+            SKIP_DOCKER_RESOURCES_CLEANUP: "true"
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+          inputResources:
+            - name: observabilityGit
+              <<: *git_resource_trigger_condition
+          outputResources:
+            - name: observabilityBuildInfo
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_observabilityGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_observabilityGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - cp -f installer/dependencies/docker/common/build.sh installer/dependencies/docker/observability/build.sh
+            - pushd installer/dependencies/docker/observability
+            - on_start
+          onExecute:
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-observability" \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              ./build.sh "${res_observabilityGit_resourcePath}"
+            - source "${res_observabilityGit_resourcePath}/build/ci/xray_violation_handler.sh"
+            - run_xray_security_scan "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" || echo "failed to run xray scan"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: observability_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          affinityGroup: observability
+          inputSteps:
+            - name: observability_build_publish
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-observability
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: postgres_build_publish
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          affinityGroup: postgres
+          environmentVariables:
+            SKIP_DOCKER_RESOURCES_CLEANUP: "true"
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+          inputResources:
+            - name: postgresGit
+              <<: *git_resource_trigger_condition
+          outputResources:
+            - name: postgresBuildInfo
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_postgresGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_postgresGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd installer/dependencies/docker/postgres
+            - on_start
+          onExecute:
+            - task: jfrog/docker-build@v0.0.1
+              repository: pipelines-tasks-virtual
+              input:
+                resourceName: postgresGit
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-postgres:${RELEASE_VERSION}"
+                dockerFileName: Dockerfile
+                dockerFileLocation: installer/dependencies/docker/postgres
+            - task: jfrog/docker-push@v0.0.2
+              repository: pipelines-tasks-virtual
+              input:
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-postgres:${RELEASE_VERSION}"
+                autoPublishBuildInfo: "true"
+                xrayScan: ${XRAY_ENABLED}
+                failOnScan: ${XRAY_FAIL_PIPELINES}
+                outputBuildInfoResourceName: "postgresBuildInfo"
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: postgres_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          affinityGroup: postgres
+          inputSteps:
+            - name: postgres_build_publish
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-postgres
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: pipelines_router_build_publish
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          affinityGroup: router
+          environmentVariables:
+            SKIP_DOCKER_RESOURCES_CLEANUP: "true"
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+          inputResources:
+            - name: routerGit
+              <<: *git_resource_trigger_condition
+          outputResources:
+            - name: routerBuildInfo
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_routerGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_routerGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - cp -f installer/dependencies/docker/common/build.sh installer/dependencies/docker/router/build.sh
+            - pushd installer/dependencies/docker/router
+            - on_start
+          onExecute:
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-router" \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              ./build.sh "${res_routerGit_resourcePath}"
+            - source "${res_routerGit_resourcePath}/build/ci/xray_violation_handler.sh"
+            - run_xray_security_scan "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" || echo "failed to run xray scan"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: pipelines_router_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          affinityGroup: router
+          inputSteps:
+            - name: pipelines_router_build_publish
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-router
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: vault_build_push
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          affinityGroup: vault
+          environmentVariables:
+            SKIP_DOCKER_RESOURCES_CLEANUP: "true"
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+          inputResources:
+            - name: vaultGit
+              <<: *git_resource_trigger_condition
+          outputResources:
+            - name: vaultBuildInfo
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_vaultGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_vaultGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd installer/dependencies/docker/vault
+            - on_start
+            - task: jfrog/docker-build@v0.0.1
+              repository: pipelines-tasks-virtual
+              input:
+                resourceName: vaultGit
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-vault:${RELEASE_VERSION}"
+                dockerFileName: Dockerfile
+                dockerFileLocation: installer/dependencies/docker/vault
+            - task: jfrog/docker-push@v0.0.2
+              repository: pipelines-tasks-virtual
+              input:
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-vault:${RELEASE_VERSION}"
+                autoPublishBuildInfo: "true"
+                xrayScan: ${XRAY_ENABLED}
+                failOnScan: ${XRAY_FAIL_PIPELINES}
+                outputBuildInfoResourceName: "vaultBuildInfo"
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: vault_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          affinityGroup: vault
+          inputSteps:
+            - name: vault_build_push
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-vault
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: vault_init_build_publish
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          affinityGroup: vault_init
+          environmentVariables:
+            SKIP_DOCKER_RESOURCES_CLEANUP: "true"
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+          inputResources:
+            - name: node16MicroRunImage
+            - name: vaultInitGit
+              <<: *git_resource_trigger_condition
+          outputResources:
+            - name: vaultInitBuildInfo
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_vaultInitGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_vaultInitGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_go.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd installer/dependencies/docker/vault-init
+            - on_start
+          onExecute:
+            - task: jfrog/docker-build@v0.0.1
+              repository: pipelines-tasks-virtual
+              input:
+                resourceName: vaultInitGit
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-vault-init:${RELEASE_VERSION}"
+                dockerFileName: Dockerfile
+                dockerFileLocation: installer/dependencies/docker/vault-init
+                optionalParams: --build-arg BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag
+            - task: jfrog/docker-push@v0.0.2
+              repository: pipelines-tasks-virtual
+              input:
+                dockerImage: "entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-vault-init:${RELEASE_VERSION}"
+                autoPublishBuildInfo: "true"
+                xrayScan: ${XRAY_ENABLED}
+                failOnScan: ${XRAY_FAIL_PIPELINES}
+                outputBuildInfoResourceName: "vaultInitBuildInfo"
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: vault_init_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          affinityGroup: vault_init
+          inputSteps:
+            - name: vault_init_build_publish
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-vault-init
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: www_build
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - "16.10.0"
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: wwwGit
+              <<: *git_resource_trigger_condition
+            - name: node16MicroRunImage
+            - name: node16BuildImage
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_wwwGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_wwwGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export wwwImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-www"
+          onExecute:
+            - pushd $res_wwwGit_resourcePath/services/www
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME=$wwwImageName \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              MICRO_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag \
+              ./buildWww.sh "${res_wwwGit_resourcePath}"
+            - add_run_variables WWW_BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - add_run_variables WWW_BUILD_NAME=$JFROG_CLI_BUILD_NAME
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: www_xray_scan
+        type: Bash
+        configuration:
+          condition: 'XRAY_ENABLED == "true"'
+          nodePool: pipelines_u20_t3small
+          inputSteps:
+            - name: www_build
+          inputResources:
+            - name: wwwGit
+              trigger: false
+          integrations:
+            - name: entplus_deployer
+            - name: entplus_jfrog_io_docker
+        execution:
+          onExecute:
+            - source "${res_wwwGit_resourcePath}/build/ci/xray_violation_handler.sh"
+            - run_xray_security_scan "${WWW_BUILD_NAME}" "${WWW_BUILD_NUMBER}" || echo "failed to run xray scan"
+
+      - name: www_quality
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: www
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - "16.10.0"
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: wwwGit
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_wwwGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - on_start
+          onExecute:
+            - pushd $res_wwwGit_resourcePath
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_wwwGit_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - npm run build:packages;
+            - npm run lint -w services/www;
+            - npm run test -w services/www;
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh;
+            - sonar_storeCache services/www;
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: www_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: www
+          integrations:
+            - name: entplus_deployer
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: wwwGit
+              trigger: false
+          inputSteps:
+            - name: www_quality
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_www'
+            SONAR_PROJECT_BASE_DIR: './services/www'
+            SONAR_QUALITYGATE_WAIT: ${SONAR_ENABLED}
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_wwwGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: www_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          inputSteps:
+            - name: www_build
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-www
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: nodePoolService_build
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          runtime:
+            type: image
+            image:
+              custom:
+                name: releases-docker.jfrog.io/jfrog/pipelines-u20node
+                tag: 16.10.0
+                options: '--net=host'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: nodePoolServiceGit
+              <<: *git_resource_trigger_condition
+            - name: node16BuildImage
+            - name: node16MicroRunImage
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_nodePoolServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd $res_nodePoolServiceGit_resourcePath/services/nodepool-service
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export nodePoolImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-nodepool-service"
+            - export DB_HOST="localhost"
+          onExecute:
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - pushd $res_nodePoolServiceGit_resourcePath/services/nodepool-service
+            - mkdir -p bin
+            - echo -n $buildPlaneVersion > ./bin/buildplaneVersion.txt
+            - echo "Release version is ${RELEASE_VERSION}"
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME=$nodePoolImageName \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              NODE_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag \
+              ./build.sh "${res_nodePoolServiceGit_resourcePath}"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: nodePoolService_quality
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: nodePoolService
+          runtime:
+            type: image
+            image:
+              custom:
+                name: releases-docker.jfrog.io/jfrog/pipelines-u20node
+                tag: 16.10.0
+                options: '--net=host'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: nodePoolServiceGit
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_nodePoolServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - pushd $res_nodePoolServiceGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - pushd $res_nodePoolServiceGit_resourcePath/services/nodepool-service
+            - on_start
+          onExecute:
+            - pushd $res_nodePoolServiceGit_resourcePath
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - npm config set registry ${npmRegistry}
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_nodePoolServiceGit_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - npm run build:packages
+            - npm run build:tools
+            - npm run lint:nodepool;
+            - npm run test:nodepool;
+            # - npm run bdd:nodepool;
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh;
+            - sonar_storeCache services/nodepool-service;
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - save_tests $res_nodePoolServiceGit_resourcePath/services/nodepool-service/nodepool-service-unit.xml
+            - stepCommons_on_complete
+
+      - name: nodePoolService_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: nodePoolService
+          integrations:
+            - name: entplus_deployer
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: nodePoolServiceGit
+              trigger: false
+          inputSteps:
+            - name: nodePoolService_quality
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_nodepool-service'
+            SONAR_PROJECT_BASE_DIR: './services/nodepool-service'
+            SONAR_QUALITYGATE_WAIT: 'false'
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_nodePoolServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: nodePoolService_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          inputSteps:
+            - name: nodePoolService_build
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-nodepool-service
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: frontend_build_publish
+        type: Bash
+        configuration:
+          nodePool: high_spec_nodes
+          affinityGroup: frontend
+          environmentVariables:
+            SKIP_DOCKER_RESOURCES_CLEANUP: "true"
+            BASE_BUILD_IMAGE: $res_node16BuildImage_imageName:$res_node16BuildImage_imageTag
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+          inputResources:
+            - name: frontendGit
+              <<: *git_resource_trigger_condition
+            - name: node16BuildImage
+            - name: buildPlaneFS_cp
+          outputResources:
+            - name: frontendBuildInfo
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_frontendGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - npm config set registry ${npmRegistry}
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_frontendGit_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - npm run build:packages
+            - cd ${res_frontendGit_resourcePath}/packages/utility && npx tsc -p tsconfig.frontend.json && npx tsc-alias -p tsconfig.frontend.json
+            - cd ${res_frontendGit_resourcePath}/packages/validators && npx tsc -p tsconfig.frontend.json && npx tsc-alias -p tsconfig.frontend.json
+            - pushd ${res_frontendGit_resourcePath}/services/frontend
+            - curl -u"${int_entplus_deployer_user}":"${int_entplus_deployer_apikey}" "${int_entplus_deployer_url}/api/npm/auth" >> ~/.npmrc
+            - npm install --legacy-peer-deps
+            - npm run build:prod && npm prune --production --legacy-peer-deps --no-fund
+            - mkdir -p packages
+            - cp -vr ${res_frontendGit_resourcePath}/packages/* ./packages
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-Ubuntu_18.04-$buildPlaneVersion.deb buildPlane-x86_64-Ubuntu_18.04.deb
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-Ubuntu_20.04-$buildPlaneVersion.deb buildPlane-x86_64-Ubuntu_20.04.deb
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-WindowsServer_2019-$buildPlaneVersion.tar.gz buildPlane-x86_64-WindowsServer_2019.tar.gz
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-ARM64-Ubuntu_20.04-$buildPlaneVersion.deb buildPlane-ARM64-Ubuntu_20.04.deb
+            {{- range $build := $.Values.build }}
+              {{- range $build.arch }}
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-{{ .name }}-{{ $build.os }}-$buildPlaneVersion.deb buildPlane-{{ .name }}-{{ $build.os }}.deb
+             {{- end}}
+            {{- end}}
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-CentOS_7-$buildPlaneVersion.rpm buildPlane-x86_64-CentOS_7.rpm
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-RHEL_7-$buildPlaneVersion.rpm buildPlane-x86_64-RHEL_7.rpm
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-RHEL_8-$buildPlaneVersion.rpm buildPlane-x86_64-RHEL_8.rpm
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-AmazonLinux_2-$buildPlaneVersion.rpm buildPlane-x86_64-AmazonLinux_2.rpm
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-x86_64-MacOS_13.5-$buildPlaneVersion.tar.gz buildPlane-x86_64-MacOS_13.5.tar.gz
+            - cp -vr $res_buildPlaneFS_cp_resourcePath/buildPlane-ARM64-MacOS_12-$buildPlaneVersion.tar.gz buildPlane-ARM64-MacOS_12.tar.gz
+            - on_start
+            - popd
+          onExecute:
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - pushd $res_frontendGit_resourcePath/services/frontend
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-frontend" \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              BASE_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag \
+              ./build.sh "${res_frontendGit_resourcePath}"
+            - source "${res_frontendGit_resourcePath}/build/ci/xray_violation_handler.sh"
+            - run_xray_security_scan "${JFROG_CLI_BUILD_NAME}" "${JFROG_CLI_BUILD_NUMBER}" || echo "failed to run xray scan"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: frontend_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          nodePool: high_spec_nodes
+          affinityGroup: frontend
+          integrations:
+            - name: entplus_deployer
+            - name: dockerDotJfrog
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: frontendGit
+              trigger: false
+          inputSteps:
+            - name: frontend_build_publish
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_ui'
+            SONAR_PROJECT_BASE_DIR: './services/frontend/'
+            SONAR_QUALITYGATE_WAIT: ${SONAR_ENABLED}
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_frontendGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: stepService_build
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          runtime:
+            type: image
+            image:
+              custom:
+                name: releases-docker.jfrog.io/jfrog/pipelines-u20node
+                tag: 16.10.0
+                options: '--net=host'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: stepServiceGit
+              <<: *git_resource_trigger_condition
+            - name: node16BuildImage
+            - name: node16MicroRunImage
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_stepServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_stepServiceGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd $res_stepServiceGit_resourcePath/services/step-service
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export stepServiceImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-step-service"
+          onExecute:
+            - pushd $res_stepServiceGit_resourcePath
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - pushd $res_stepServiceGit_resourcePath/services/step-service
+            - mkdir -p bin
+            - echo -n $buildPlaneVersion > ./bin/buildplaneVersion.txt
+            - echo "Release version is ${RELEASE_VERSION}"
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME=$stepServiceImageName \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              NODE_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag \
+              ./build.sh "${res_stepServiceGit_resourcePath}"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: stepService_quality
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: stepService
+          runtime:
+            type: image
+            image:
+              custom:
+                name: releases-docker.jfrog.io/jfrog/pipelines-u20node
+                tag: 16.10.0
+                options: '--net=host'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: stepServiceGit
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_stepServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - pushd $res_stepServiceGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd $res_stepServiceGit_resourcePath/services/step-service
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export stepServiceImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-step-service"
+          onExecute:
+            - pushd $res_stepServiceGit_resourcePath
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - npm config set registry ${npmRegistry}
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_stepServiceGit_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - npm run build:packages;
+            - npm run build -w tools/ms-testing-library;
+            - npm run build:step;
+            - npm run lint:step;
+            - npm run test:step;
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh;
+            - sonar_storeCache services/step-service;
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - save_tests $res_stepServiceGit_resourcePath/services/step-service/step-service-unit.xml
+            - stepCommons_on_complete
+
+      - name: stepService_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: stepService
+          integrations:
+            - name: entplus_deployer
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: stepServiceGit
+              trigger: false
+          inputSteps:
+            - name: stepService_quality
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_step-service'
+            SONAR_PROJECT_BASE_DIR: './services/step-service'
+            SONAR_QUALITYGATE_WAIT: 'false'
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_stepServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: stepService_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          inputSteps:
+            - name: stepService_build
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-step-service
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: runService_build
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          runtime:
+            type: image
+            image:
+              custom:
+                name: releases-docker.jfrog.io/jfrog/pipelines-u20node
+                tag: 16.10.0
+                options: '--net=host'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: runServiceGit
+              <<: *git_resource_trigger_condition
+            - name: node16BuildImage
+            - name: node16MicroRunImage
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_runServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_runServiceGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd $res_runServiceGit_resourcePath/services/run-service
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export runServiceImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-run-service"
+          onExecute:
+            - pushd $res_runServiceGit_resourcePath
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - pushd $res_runServiceGit_resourcePath/services/run-service
+            - mkdir -p bin
+            - echo -n $buildPlaneVersion > ./bin/buildplaneVersion.txt
+            - echo "Release version is ${RELEASE_VERSION}"
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME=$runServiceImageName \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              NODE_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag \
+              ./build.sh "${res_runServiceGit_resourcePath}"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: runService_quality
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: runService
+          runtime:
+            type: image
+            image:
+              custom:
+                name: releases-docker.jfrog.io/jfrog/pipelines-u20node
+                tag: 16.10.0
+                options: '--net=host'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: runServiceGit
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_runServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - pushd $res_runServiceGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd $res_runServiceGit_resourcePath/services/run-service
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export runServiceImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-run-service"
+          onExecute:
+            - pushd $res_runServiceGit_resourcePath
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - npm config set registry ${npmRegistry}
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_runServiceGit_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - npm run build:packages
+            - npm run build:tools
+            - npm run build:run
+            - npm run lint:run;
+            - npm run test:run;
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh;
+            - sonar_storeCache services/run-service;
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - save_tests $res_runServiceGit_resourcePath/services/run-service/run-service-unit.xml
+            - save_tests $res_runServiceGit_resourcePath/services/run-service/run-service-bdd.xml
+            - stepCommons_on_complete
+
+      - name: runService_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: runService
+          integrations:
+            - name: entplus_deployer
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: runServiceGit
+              trigger: false
+          inputSteps:
+            - name: runService_quality
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_run-service'
+            SONAR_PROJECT_BASE_DIR: './services/run-service'
+            SONAR_QUALITYGATE_WAIT: 'false'
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_runServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: runService_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          inputSteps:
+            - name: runService_build
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-run-service
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: logService_build
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          runtime:
+            type: image
+            image:
+              custom:
+                name: releases-docker.jfrog.io/jfrog/pipelines-u20node
+                tag: 16.10.0
+                options: '--net=host'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: logServiceGit
+              <<: *git_resource_trigger_condition
+            - name: node16BuildImage
+            - name: node16MicroRunImage
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_logServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_logServiceGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd $res_logServiceGit_resourcePath/services/log-service
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export logServiceImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-log-service"
+          onExecute:
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - pushd $res_logServiceGit_resourcePath/services/log-service
+            - mkdir -p bin
+            - echo -n $buildPlaneVersion > ./bin/buildplaneVersion.txt
+            - echo "Release version is ${RELEASE_VERSION}"
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME=$logServiceImageName \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              NODE_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag \
+              ./build.sh "${res_logServiceGit_resourcePath}"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: logService_quality
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: logService
+          runtime:
+            type: image
+            image:
+              custom:
+                name: releases-docker.jfrog.io/jfrog/pipelines-u20node
+                tag: 16.10.0
+                options: '--net=host'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: logServiceGit
+              <<: *git_resource_trigger_condition
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_logServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - pushd $res_logServiceGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd $res_logServiceGit_resourcePath/services/log-service
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export logServiceImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-log-service"
+          onExecute:
+            - pushd $res_logServiceGit_resourcePath
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - npm config set registry ${npmRegistry}
+            - export RT_API_KEY="${int_entplus_deployer_apikey}"
+            - export RT_USER="${int_entplus_deployer_user}"
+            - export RT_URL="${int_entplus_deployer_url}"
+            - cp ${res_logServiceGit_resourcePath}/build/ci/npm_installer.sh ./
+            - ./npm_installer.sh
+            - npm run build:packages;
+            - npm run build -w tools/ms-testing-library;
+            - npm run lint:log;
+            - npm run test:log;
+            - npm run bdd:log;
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh;
+            - sonar_storeCache services/log-service;
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - save_tests $res_logServiceGit_resourcePath/services/log-service/log-service-unit.xml
+            - stepCommons_on_complete
+
+      - name: logService_sonar_scan
+        type: Bash
+        configuration:
+          condition: 'QUICK_MODE == "false"'
+          affinityGroup: logService
+          integrations:
+            - name: entplus_deployer
+            - name: sonar_jfrog_info
+          inputResources:
+            - name: logServiceGit
+              trigger: false
+          inputSteps:
+            - name: logService_quality
+          environmentVariables:
+            SONAR_PROJECT_KEY: 'pipelines_log-service'
+            SONAR_PROJECT_BASE_DIR: './services/log-service'
+            SONAR_QUALITYGATE_WAIT: 'false'
+            SONAR_ADDITIONAL_OPTIONS: '-X'
+            RUN_SONAR: 'true'
+          runtime:
+            type: image
+            image:
+              custom:
+                registry: entplus_deployer
+                sourceRepository: docker-staging-local
+                name: docker.jfrog.io/sonar-scanner
+                tag: ${SONAR_DOCKER_TAG:-latest}
+        execution:
+          onStart:
+            - source ${res_logServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: logService_clam_scan
+        type: Bash
+        configuration:
+          condition: 'CLAM_SCAN_ENABLED == "true"'
+          inputSteps:
+            - name: logService_build
+          inputResources:
+            - name: cpGit
+              trigger: false
+          integrations:
+            - name: dockerDotJfrog
+          environmentVariables:
+            PIPELINES_IMAGE: pipelines-log-service
+            APP_PATH: /opt/jfrog/pipelines
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath/clamAV
+            - docker-compose -p ${PIPELINES_IMAGE} -f docker-compose.yaml up --no-build --exit-code-from clamscanner
+            - popd
+
+      - name: analyticsService_build
+        type: Bash
+        configuration:
+          <<: *app_build_node_pool
+          runtime:
+            type: image
+            image:
+              custom:
+                name: releases-docker.jfrog.io/jfrog/pipelines-u20node
+                tag: 16.10.0
+                options: '--net=host'
+          integrations:
+            - name: entplus_deployer
+          inputResources:
+            - name: analyticsServiceGit
+              <<: *git_resource_trigger_condition
+            - name: node16BuildImage
+            - name: node16MicroRunImage
+          inputSteps:
+            - name: trigger_controlplane_builds
+        execution:
+          onStart:
+            - source ${res_analyticsServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_analyticsServiceGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd $res_analyticsServiceGit_resourcePath/services/log-service
+            - on_start
+            - add_run_variables BUILD_NUMBER=$JFROG_CLI_BUILD_NUMBER
+            - export analyticsServiceImageName="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog/pipelines-analytics-service"
+          onExecute:
+            - export NODE_OPTIONS=--max-old-space-size=4096
+            - pushd $res_analyticsServiceGit_resourcePath/services/analytics-service
+            - mkdir -p bin
+            - echo -n $buildPlaneVersion > ./bin/buildplaneVersion.txt
+            - echo "Release version is ${RELEASE_VERSION}"
+            - |
+              RT_SERVER=server \
+              RT_URL=$repo21 \
+              RT_USER=$int_entplus_deployer_user \
+              RT_API_KEY=$int_entplus_deployer_apikey \
+              IMG_NAME=$analyticsServiceImageName \
+              IMG_TAG=$RELEASE_VERSION \
+              RT_REGISTRY=entplus.jfrog.io/${RT_DOCKER_REPO} \
+              NODE_BUILD_IMAGE=$res_node16BuildImage_imageName:$res_node16BuildImage_imageTag \
+              BASE_RUN_IMAGE=$res_node16MicroRunImage_imageName:$res_node16MicroRunImage_imageTag \
+              ./build.sh "${res_analyticsServiceGit_resourcePath}"
+            - popd
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: trigger_post_release
+        type: Bash
+        configuration:
+          condition: 'TRIGGER_POST_RELEASE == "true"'
+          nodePool: pipelines_u20_t3small
+          inputSteps:
+            - name: api_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: packages_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: frontend_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: inst_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: micro_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: nodePoolService_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: runService_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: logService_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: stepService_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: www_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: pipelines_helm_package
+            - name: api_xray_scan
+              status:
+                - success
+                - skipped
+            - name: template_xray_scan
+              status:
+                - success
+                - skipped
+            - name: micro_xray_scan
+              status:
+                - success
+                - skipped
+            - name: www_xray_scan
+              status:
+                - success
+                - skipped
+            - name: api_clam_scan
+              status:
+                - success
+                - skipped
+            - name: inst_clam_scan
+              status:
+                - success
+                - skipped
+            - name: micro_clam_scan
+              status:
+                - success
+                - skipped
+            - name: nodePoolService_clam_scan
+              status:
+                - success
+                - skipped
+            - name: runService_clam_scan
+              status:
+                - success
+                - skipped
+            - name: logService_clam_scan
+              status:
+                - success
+                - skipped
+            - name: stepService_clam_scan
+              status:
+                - success
+                - skipped
+            - name: observability_clam_scan
+              status:
+                - success
+                - skipped
+            - name: pipelines_router_clam_scan
+              status:
+                - success
+                - skipped
+            - name: msg_clam_scan
+              status:
+                - success
+                - skipped
+            - name: postgres_clam_scan
+              status:
+                - success
+                - skipped
+            - name: redis_clam_scan
+              status:
+                - success
+                - skipped
+            - name: vault_clam_scan
+              status:
+                - success
+                - skipped
+            - name: vault_init_clam_scan
+              status:
+                - success
+                - skipped
+            - name: www_clam_scan
+              status:
+                - success
+                - skipped
+            - name: api_build
+            - name: inst_build
+            - name: micro_build
+            - name: nodePoolService_build
+            - name: observability_build_publish
+            - name: pipelines_router_build_publish
+            - name: msg_build_publish
+            - name: postgres_build_publish
+            - name: redis_build_publish
+            - name: vault_build_push
+            - name: vault_init_build_publish
+            - name: www_build
+            - name: runService_build
+            - name: logService_build
+            - name: stepService_build
+            - name: analyticsService_build
+
+          integrations:
+            - name: entplus_deployer
+            - name: pipelines_release_notifications
+          inputResources:
+            - name: cpGit
+              trigger: false
+          outputResources:
+            - name: pipe_rc_wh
+            - name: pipelines_release_bitbucket
+        execution:
+          onStart:
+            - source ${res_cpGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/scripts/trigger_post_release_pipeline.sh
+            - on_start
+          onExecute:
+            - on_execute
+          onSuccess:
+            - |
+              if [[ -n $will_publish_bi  ]]
+              then
+                if [[ {{gitBranch}} = milestone* || {{gitBranch}} = release* ]]
+                then
+                  set_payload pipe_rc_wh "{\"build_number\":\"$BUILD_NUMBER\",\"step_name\":\"$step_name\",\"version\":\"$RELEASE_VERSION\"}"
+                  send_notification pipelines_release_notifications --text "release $RELEASE_VERSION has been built successfully with BuildPlane version ${buildPlaneVersion} and helm chart version ${ChartVersion} "
+                fi
+              fi
+      
+
+      - name: pipelines_helm_package
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          chronological: true
+          integrations:
+            - name: pipelines_release_notifications
+            - name: entplus_deployer
+          inputSteps:
+            - name: trigger_controlplane_builds
+          inputResources:
+            - name: cpGit
+              <<: *git_resource_trigger_condition
+          outputResources:
+            - name: pipelines_helm_build_info
+          environmentVariables:
+            CHART_TESTING_ARGS: "--charts=helm-charts/stable/pipelines"
+            CHART_NAME: "pipelines"
+        execution:
+          onStart:
+            - pushd $res_cpGit_resourcePath
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - BRANCH_SNAPSHOT_VERSION=${RELEASE_VERSION:6}
+            - export USERNAME="${int_entplus_deployer_user}"
+            - export APIKEY="${int_entplus_deployer_apikey}"
+            - source "${res_cpGit_resourcePath}/build/ci/pipelines_step_setup.sh"
+            - stepCommons_load_script build/ci/pipelines_package_helm.sh
+            - on_start
+            - add_run_variables helmRepository=$helmVirtualRepository
+          onExecute:
+            - on_execute
+            - add_run_variables helmChartVersion=${chart_version}-${BRANCH_SNAPSHOT_VERSION}
+            - add_run_variables ChartVersion=${BUMP_CHART_VERSION}
+          onSuccess:
+            - stepCommons_on_success || echo “[ERROR] stepCommons_on_success returned an error”
+          onFailure:
+            - on_failure || echo “[ERROR] on_failure returned an error”
+            - stepCommons_on_failure || echo “[ERROR] stepCommons_on_failure returned an error”
+          onComplete:
+            - stepCommons_pre_on_complete || echo “[ERROR] stepCommons_pre_on_complete returned an error”
+            - on_complete || echo "[ERROR] on_complete returned an error"
+            - stepCommons_on_complete || echo “[ERROR] stepCommons_on_complete returned an error”
+
+      - name: create_snapshot_branch
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          inputSteps:
+            - name: api_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: packages_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: frontend_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: inst_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: micro_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: nodePoolService_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: runService_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: logService_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: stepService_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: www_sonar_scan
+              status:
+                - success
+                - skipped
+            - name: automation_e2e_build
+              status:
+                - success
+                - skipped
+            - name: mstest_pipelines_sync
+              status:
+                -  success
+                -  skipped
+            - name: mstest_pipeline_sync_nativeStep
+              status:
+                -  success
+                -  skipped
+            - name: pipelines_helm_package
+              status:
+                - success
+                - failure
+                - error
+            - name: api_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: nodePoolService_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: runService_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: logService_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: stepService_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: micro_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: www_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: inst_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: msg_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: postgres_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: redis_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: pipelines_router_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: vault_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: vault_init_clam_scan
+              status:
+                -  success
+                -  skipped
+            - name: api_xray_scan
+              status:
+                -  success
+                -  skipped
+            - name: template_xray_scan
+              status:
+                -  success
+                -  skipped
+            - name: micro_xray_scan
+              status:
+                -  success
+                -  skipped
+            - name: www_xray_scan
+              status:
+                -  success
+                -  skipped
+            - name: packages_build
+              status:
+                - success
+                - skipped
+            - name: api_build
+              status:
+                - success
+                - skipped
+            - name: nodePoolService_build
+              status:
+                - success
+                - skipped
+            - name: micro_build
+              status:
+                - success
+                - skipped
+            - name: www_build
+              status:
+                - success
+                - skipped
+            - name: inst_build
+              status:
+                - success
+                - skipped
+            - name: msg_build_publish
+              status:
+                - success
+                - skipped
+            - name: postgres_build_publish
+              status:
+                - success
+                - skipped
+            - name: redis_build_publish
+              status:
+                - success
+                - skipped
+            - name: pipelines_router_build_publish
+              status:
+                - success
+                - skipped
+            - name: vault_build_push
+              status:
+                - success
+                - skipped
+            - name: vault_init_build_publish
+              status:
+                - success
+                - skipped
+            - name: runService_build
+              status:
+                - success
+                - skipped
+            - name: logService_build
+              status:
+                - success
+                - skipped
+            - name: stepService_build
+              status:
+                - success
+                - skipped
+            - name: analyticsService_build
+              status:
+                - success
+                - skipped
+            - name: mstest_cron
+              status:
+                - success
+                - skipped
+            - name: mstest_hookhandler
+              status:
+                - success
+                - skipped
+          integrations:
+            - name: entArt
+            - name: cpIncomingWebhook
+            - name: dockerDotJfrog
+          inputResources:
+            - name: cpGit
+              <<: *git_resource_trigger_condition
+          outputResources:
+            - name: branchSnapshotBag
+            - name: triggerDeployK8sEnv
+          environmentVariables:
+            PIPELINES_IMAGE_PREFIX: pipelines-
+            DEFAULT_VERSION:
+              default: 0.0.0-m000
+              description: If branch snapshot image is not present for any services, we will pull images from 0.0.0-m000(master branch) by default. User can change it to any version
+        execution:
+          onStart:
+            - source ${res_cpGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - export IMAGE_NAMES="api automation-e2e frontend installer msg micro nodepool-service observability postgres redis router vault vault-init www run-service log-service step-service analytics-service"
+            - IMAGE_PREFIX="entplus.jfrog.io/${RT_DOCKER_REPO}/jfrog"
+            - REGISTRYURL="entplus.jfrog.io/${RT_DOCKER_REPO}"
+            - NORMALIZED_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - |
+              if [[ "{{gitBranch}}" == release* ]] || [[ "{{gitBranch}}" == milestone* ]] || [[ "{{gitBranch}}" == preRelease* ]] ;  then
+                write_output branchSnapshotBag "snapshotVersion=$NORMALIZED_VERSION"
+                write_output branchSnapshotBag "registryUrl=$REGISTRYURL"
+                exit 0;
+              fi
+            - pushd $res_cpGit_resourcePath
+            - on_start
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - BRANCH_SNAPSHOT_VERSION=${NORMALIZED_VERSION}-${run_number}
+            - echo "Snapshot version will be ${BRANCH_SNAPSHOT_VERSION}"
+            - |
+              if [[ "{{gitBranch}}" == release* ]] || [[ "{{gitBranch}}" == milestone* ]] ; then
+                for image in ${IMAGE_NAMES}; do
+                  if [[ $(jfrog rt s "${RT_DOCKER_REPO}/jfrog/${PIPELINES_IMAGE_PREFIX}${image}/${NORMALIZED_VERSION}/*" | jq length) > 0 ]]; then
+                    jfrog rt docker-promote --source-tag ${NORMALIZED_VERSION} --target-tag ${BRANCH_SNAPSHOT_VERSION} --copy=true jfrog/${PIPELINES_IMAGE_PREFIX}${image}  ${RT_DOCKER_REPO} dev-releases-docker-virtual
+                  fi
+                done
+              fi
+            - RT_DOCKER_REPO_LOCAL=$(echo "$RT_DOCKER_REPO" | sed "s/virtual/local/")
+            - |
+              if [[ "{{gitBranch}}" == bugfix* ]] || [[ "{{gitBranch}}" == feature* ]] || [[ "{{gitBranch}}" == master ]] ; then
+                for image in ${IMAGE_NAMES}; do
+                  #if the images is avilable it will pick the latest images.
+                  if [[ $(jfrog rt s "${RT_DOCKER_REPO}/jfrog/${PIPELINES_IMAGE_PREFIX}${image}/${NORMALIZED_VERSION}/*" | jq length) > 0 ]]; then
+                    # This is to avoid promotion of multiarch images in the same repo,
+                    # folder structure copy with sample version,
+                    #  f1234                         ---- copy ------>           f1234-2
+                    #    - list.manifest.json                                       - list.manifest.json
+                    #  arm64.sha
+                    #    - manifest.json
+                    #  amd64.sha
+                    #    - manifest.json
+                    jfrog rt cp "${RT_DOCKER_REPO_LOCAL}/jfrog/${PIPELINES_IMAGE_PREFIX}${image}/${NORMALIZED_VERSION}" "${RT_DOCKER_REPO_LOCAL}/jfrog/${PIPELINES_IMAGE_PREFIX}${image}/${BRANCH_SNAPSHOT_VERSION}" --flat=true
+                  else
+                    # If the images are not present then will the take master images and push to branch repo
+                    jfrog rt docker-promote --source-tag ${DEFAULT_VERSION} --target-tag ${NORMALIZED_VERSION} --copy=true jfrog/${PIPELINES_IMAGE_PREFIX}${image} dev-master-docker-local ${RT_DOCKER_REPO_LOCAL}
+                    jfrog rt cp "${RT_DOCKER_REPO_LOCAL}/jfrog/${PIPELINES_IMAGE_PREFIX}${image}/${NORMALIZED_VERSION}" "${RT_DOCKER_REPO_LOCAL}/jfrog/${PIPELINES_IMAGE_PREFIX}${image}/${BRANCH_SNAPSHOT_VERSION}" --flat=true
+                  fi
+                done
+              fi
+            - write_output branchSnapshotBag "snapshotVersion=$BRANCH_SNAPSHOT_VERSION"
+            - committer=$(node automation/tests/committerLoginExtractor.js $res_cpGit_lastAuthorEmail)
+            - branchName=$res_cpGit_branchName
+            - write_output branchSnapshotBag "committer=$committer"
+            - write_output branchSnapshotBag "branchName=$branchName"
+            - write_output branchSnapshotBag "registryUrl=$REGISTRYURL"
+            - write_output branchSnapshotBag "helmRepo=$helmRepository"
+            - write_output branchSnapshotBag "helmChartVersion=$helmChartVersion"
+            - |
+              echo "Update resource if quick mode is true"
+              if [[ "$QUICK_MODE" == "true" ]] || [[ "$DEPLOY_K8S_ENVIRONMENT" == "true" ]] ; then
+                write_output triggerDeployK8sEnv "runId=$run_id"
+              fi
+            # TODO: Uncomment this when build nodes have access to versions.jfrog.info
+            # - |
+            #   if [[ -z "$CHART_VERSION_OVERRIDE" ]]
+            #   then
+            #       echo "using chart from newest available release"
+            #       CHART_VERSION=10$(curl -s "https://versions.jfrog.info/latestVersions?products=pipelines" | jq -r '.pipelines.release')
+            #       write_output branchSnapshotBag "chartVersion=$CHART_VERSION"
+            #   else
+            #       echo "using chart version $CHART_VERSION_OVERRIDE"
+            #       write_output branchSnapshotBag "chartVersion=$CHART_VERSION_OVERRIDE"
+            #   fi
+            - |
+              echo "Checking if commit $res_cpGit_commitSha exists"
+              if [ "$(git cat-file -t $res_cpGit_commitSha)" != "commit" ]; then
+                write_output branchSnapshotBag "onlyAutomationChange=false"
+                exit 0
+              fi
+            - |
+              echo "Checking if commit $res_cpGit_beforeCommitSha exists"
+              if [ "$(git cat-file -t $res_cpGit_beforeCommitSha)" != "commit" ]; then
+                write_output branchSnapshotBag "onlyAutomationChange=false"
+                exit 0
+              fi
+            - |
+              if [ $(git diff --name-only $res_cpGit_beforeCommitSha $res_cpGit_commitSha | grep -v "automation/tests/" | wc -l) -gt 0 ]; then
+                echo "something other than automation folder has changed"
+                write_output branchSnapshotBag "onlyAutomationChange=false"
+              else
+                echo "only automation folder changed"
+                write_output branchSnapshotBag "onlyAutomationChange=true"
+              fi
+          onComplete:
+            - stepCommons_on_complete
+            - |
+              if [[ "$QUICK_MODE" == "true" ]]; then
+                echo "step_triggered_by_resource_name  [$step_triggered_by_resource_name]"
+                if [[ "$step_triggered_by_resource_name" == 'frontendGit' ]]; then
+                  echo "sending success update to git because this run was executed for frontend changes"
+                  update_commit_status cpGit --status success --message "marked as success due to frontend build" --context $step_name
+                else
+                  echo "sending failure update to git because this run was executed in QUICK_MODE"
+                  update_commit_status cpGit --status failure --message "marked as failed due to quick mode" --context $step_name
+                fi
+              else
+                update_commit_status cpGit --status success --message "marked as success due to non quick mode" --context $step_name
+              fi
+          onFailure:
+            - echo "Images are missing for this branch build! Trigger pipelines to build"
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+
+  {{ if not (hasPrefix "preRelease" "{{gitBranch}}") }}
+  - name: pipelines_frontend_unit_test
+    steps:
+      - name: frontend_unit_test
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20
+          inputResources:
+            - name: frontendGit
+              trigger: false
+          integrations:
+            - name: entplus_deployer
+            - name: entplus_jfrog_io_docker
+            - name: dockerDotJfrog
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - 16
+        execution:
+          onStart:
+            - source ${res_frontendGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - pushd $res_frontendGit_resourcePath
+            - add_run_variables RELEASE_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - stepCommons_load_script build/ci/pipelines_build_npm.sh
+            - stepCommons_load_script build/ci/pipelines_build_docker.sh
+            - add_run_variables RT_DOCKER_REPO=$(docker_devArtifactRepoName {{gitBranch}} )
+            - pushd services/frontend
+            - on_start
+          onExecute:
+            - jfrog rt npm-config --server-id-resolve entplus_deployer --repo-resolve npm-virtual
+            - jfrog rt npm-install --legacy-peer-deps
+            - npm run build
+            - npm run test
+          onFailure:
+            - update_commit_status frontendGit
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+            - update_commit_status frontendGit
+          onComplete:
+            - stepCommons_on_complete
+            - update_commit_status frontendGit
+  {{end}}
+
+  {{ if (hasSuffix "d2c" "{{gitBranch}}") }}            
+  - name: branch_automation_setup
+    configuration:
+      chronological: true
+      environmentVariables:
+        readOnly:
+          NAMESPACE_PREFIX:
+            allowCustom: true
+            default: "p"
+          ADMIN_USER: "admin"
+          ADMIN_PASSWORD: "password"
+    steps:
+      - name: decide_whether_to_create_or_update_dev2cloud
+        type: Bash
+        configuration:
+          integrations:
+            - name: entArt
+            - name: dockerDotJfrog
+          inputResources:
+            - name: branchSnapshotBag
+            - name: cpGit
+              trigger: false
+          outputResources:
+            - name: environmentSetupBag
+            - name: environmentOperateBag
+            - name: triggerLightWeightAutomation
+        execution:
+          onExecute:
+            - pushd $res_cpGit_resourcePath
+            - helmChartVersion=$res_branchSnapshotBag_helmChartVersion
+            - |
+              if [ ! -z "$helmChartVersion" ]; then
+                jfrog rt cp $res_branchSnapshotBag_helmRepo/pipelines-$helmChartVersion.tgz helm-local/pipelines-$helmChartVersion.tgz
+              else
+                helmChartVersion="101.35.0"
+              fi
+            - NORMALIZED_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - |
+              if [ -z "$master_key" ]; then
+                master_key=$(openssl rand -hex 16)
+              fi
+            - add_pipeline_variables master_key="$master_key"
+            - |
+              if [ ! -z "$res_branchSnapshotBag_snapshotVersion" ]; then
+                add_pipeline_variables VERSION="${res_branchSnapshotBag_snapshotVersion}"
+              elif [ ! -z "$BRANCH_VERSION" ]; then
+                add_pipeline_variables VERSION="$BRANCH_VERSION"
+              else
+                echo "BRANCH_VERSION not specified"
+                exit 1
+              fi
+            - |
+              if [ -z "$res_branchSnapshotBag_chartVersion"]; then
+                add_run_variables CHART_VERSION=10$(curl -s "https://versions.jfrog.info/latestVersions?products=pipelines" | jq -r '.pipelines.release')
+                echo setting chart version to be $CHART_VERSION
+              else
+                add_run_variables CHART_VERSION=$res_branchSnapshotBag_chartVersion
+              fi
+            - export serverNamePrefix=$NAMESPACE_PREFIX
+            - |
+              if [ "$res_branchSnapshotBag_branchName" == "master" ]; then
+                serverNamePrefix="jfpipe"
+              fi
+            - add_pipeline_variables ping_response=$(curl https://$serverNamePrefix${NORMALIZED_VERSION:6}.jfrogdev.org/artifactory/api/system/ping) || true
+            - add_pipeline_variables serverNameInJenkins=$serverNamePrefix${NORMALIZED_VERSION:6}
+            - echo $ping_response
+            - |
+              if [[ "$ping_response" == "OK" ]];
+              then
+                if [[ "$res_branchSnapshotBag_onlyAutomationChange" == "true" ]]; then
+                  exit 0
+                fi
+                write_output environmentOperateBag "pipelinesVersion=${VERSION}"
+                write_output environmentOperateBag "chartVersion=$helmChartVersion"
+                write_output environmentOperateBag "serverName=$serverNameInJenkins"
+                write_output environmentOperateBag "committer=$res_branchSnapshotBag_committer"
+                write_output environmentOperateBag "branchName=$res_branchSnapshotBag_branchName"
+                write_output environmentOperateBag "registryUrl=$res_branchSnapshotBag_registryUrl"
+              else
+                write_output environmentSetupBag "pipelinesVersion=${VERSION}"
+                write_output environmentSetupBag "chartVersion=$helmChartVersion"
+                write_output environmentSetupBag "serverName=$serverNameInJenkins"
+                write_output environmentSetupBag "masterKey=$master_key"
+                write_output environmentSetupBag "committer=$res_branchSnapshotBag_committer"
+                write_output environmentSetupBag "branchName=$res_branchSnapshotBag_branchName"
+                write_output environmentSetupBag "registryUrl=$res_branchSnapshotBag_registryUrl"
+              fi
+
+      - name: branch_environment_setup
+        type: Jenkins
+        configuration:
+          inputResources:
+            - name: environmentSetupBag
+              newVersionOnly: true
+          integrations:
+            - name: jenkins_entplus_ci
+          jenkinsJobName: tools/platform/environment_setup_gen2
+          buildParameters:
+            SERVER_NAME: '${res_environmentSetupBag_serverName}'
+            ACCOUNT_TYPE: enterprise_plus
+            DEPLOYMENT_SIZING: medium
+            GROUP: PIPELINES
+            EXPIRY: 3d
+            XRAY: 'false'
+            PIPELINES: 'true'
+            JFMC: 'false'
+            DISTRIBUTION: 'false'
+            INSIGHT: 'false'
+            DEPLOYMENT_TYPE: 'onprem'
+            REGION: 'dev-aps1'
+            DEBUG_ENVIRONMENT: 'false'
+            LOGS_TO_KIBANA: 'true'
+            EXTRA_PARAMS: >-
+              master_key=${res_environmentSetupBag_masterKey}
+
+              docker_repo_name=${res_environmentSetupBag_registryUrl}
+
+              pipelines_signed_pipelines_enabled=true
+              
+              conf_pipelines_chart_version=${res_environmentSetupBag_chartVersion}
+              
+              conf_pipelines_unified_version=${res_environmentSetupBag_pipelinesVersion}
+              
+              chart_app_version_unalignment_enabled=true
+              
+              artifactory_special_properties=staging.mode=true
+              
+              feature_jfconnect_enabled=False
+              
+              whitelist_cidr=20.184.243.216/32;146.148.8.199/32;104.192.136.0/21;185.166.140.0/22;18.205.93.0/25;18.234.32.128/25;13.52.5.0/25;34.74.90.64/28;34.74.226.0/24;13.52.5.96/28;13.236.8.224/28;18.136.214.96/28;18.184.99.224/28;18.234.32.224/28;18.246.31.224/28;52.215.192.224/28;104.192.137.240/28;104.192.138.240/28;104.192.140.240/28;104.192.142.240/28;104.192.143.240/28;185.166.143.240/28;185.166.142.240/28
+              
+              pipelines_auth_token=Testing1234
+              
+              pipelines_rabbitmq_persistence_enabled=true
+              
+              pipelines_split_to_pods=false"
+
+      - name: branch_environment_operate
+        type: Jenkins
+        configuration:
+          inputResources:
+            - name: environmentOperateBag
+              newVersionOnly: true
+          integrations:
+            - name: jenkins_entplus_ci
+          jenkinsJobName: tools/platform/environment_operate
+          buildParameters:
+            SERVER_NAME: ${res_environmentOperateBag_serverName}
+            EXPIRY: "3d"
+            ACTION: "upgrade"
+            EXTRA_PARAMS: "conf_pipelines_unified_version=${res_environmentOperateBag_pipelinesVersion}\ndocker_repo_name=${res_environmentOperateBag_registryUrl}\nchart_app_version_unalignment_enabled=true\nconf_pipelines_chart_version=${res_environmentOperateBag_chartVersion}\nartifactory_special_properties=staging.mode=true\nfeature_jfconnect_enabled=False\npipelines_api_url_enabled=True\npipelines_split_to_pods=false"
+
+      - name: branch_environment_status
+        type: Bash
+        configuration:
+          integrations:
+            - name: pipelines_mqtest_slack
+          inputResources:
+            - name: environmentSetupBag
+              trigger: false
+            - name: environmentOperateBag
+              trigger: false
+          inputSteps:
+            - name: branch_environment_setup
+              status:
+                - timeout
+                - skipped
+                - success
+                - failure
+            - name: branch_environment_operate
+              status:
+                - timeout
+                - skipped
+                - success
+                - failure
+            - name: decide_whether_to_create_or_update_dev2cloud
+              status:
+                - failure
+                - success
+          outputResources:
+            - name: triggerLightWeightAutomation
+        execution:
+          onExecute:
+            - export expectedVersion=""
+            - export serverName=$serverNameInJenkins
+            - |
+              if [[ "$res_environmentOperateBag_pipelinesVersion" ]]
+              then
+                expectedVersion=$res_environmentOperateBag_pipelinesVersion
+                export committer=$res_environmentOperateBag_committer
+                export branchName=$res_environmentOperateBag_branchName
+              else
+                export committer=$res_environmentSetupBag_committer
+                export branchName=$res_environmentSetupBag_branchName
+                expectedVersion=$res_environmentSetupBag_pipelinesVersion
+                export counter=1
+                while [ "$(curl https://${serverName}.jfrogdev.org/artifactory/api/system/ping)" != "OK" ] && [ $counter -lt 20 ]; do
+                  echo "retrying again in 10 seconds hitting https://${serverName}.jfrogdev.org/artifactory/api/system/ping"
+                  sleep 10
+                  counter=$(( counter + 1 ))
+                done
+                if [ $counter -ge 20 ]; then
+                  echo "RT not up in branch env"
+                  exit 1
+                fi
+              fi
+              if [[ "$(curl --location --request GET "https://${serverName}.jfrogdev.org/artifactory/api/system/ping" -u admin:Password@1)" != "OK" ]]
+                then
+                  if [[ "$(curl --location --request GET "https://${serverName}.jfrogdev.org/artifactory/api/system/ping" -u admin:password)" = "OK" ]]
+                    then
+                      echo "Updating the password of instance to Password@1, assuming the password is password"
+                      curl --location --request POST "https://${serverName}.jfrogdev.org/artifactory/api/security/users/authorization/changePassword" \
+                      --header 'Authorization: Basic YWRtaW46cGFzc3dvcmQ=' \
+                      --header 'Content-Type: application/json' \
+                      --data-raw '{
+                          "userName" : "admin",
+                          "oldPassword" : "password",
+                          "newPassword1" : "Password@1",
+                          "newPassword2" : "Password@1"
+                      }'
+                    else
+                      echo "Updating the password of instance to Password@1, assuming the password is Password1"
+                      curl --location --request POST "https://${serverName}.jfrogdev.org/artifactory/api/security/users/authorization/changePassword" \
+                      --header 'Authorization: Basic YWRtaW46UGFzc3dvcmQx' \
+                      --header 'Content-Type: application/json' \
+                      --data-raw '{
+                          "userName" : "admin",
+                          "oldPassword" : "Password1",
+                          "newPassword1" : "Password@1",
+                          "newPassword2" : "Password@1"
+                      }'
+                  fi
+              fi
+            - curl -s https://${serverName}.jfrogdev.org/pipelines/api/v1/system/info
+            - |
+              export counter=1
+              while [[ "$(curl -s https://${serverName}.jfrogdev.org/pipelines/api/v1/system/info | jq -r .version)" != ${expectedVersion} ]] && [ $counter -lt 60 ]; do
+                sleep 5
+                counter=$(( counter + 1 ))
+              done
+              if [ $counter -ge 60 ]; then
+                echo "Branch environment doesnt have required Pipelines version"
+                exit 1
+              fi
+            - write_output triggerLightWeightAutomation "jpdUrl=https://${serverName}.jfrogdev.org"
+            - write_output triggerLightWeightAutomation "joinKey=$master_key"
+            - write_output triggerLightWeightAutomation "branchPipelinesVersion=$expectedVersion"
+            - write_output triggerLightWeightAutomation "stepId=$step_id"
+            - write_output triggerLightWeightAutomation "d2c=true"
+          onFailure:
+            - send_notification pipelines_mqtest_slack --text "Pipeline - $pipeline_name | Step - $step_name \n Unable to create/upgrade branch environment \n Committer - <$committer> \n Branch - $branchName \n URL - $step_url"
+  {{ end }}
+
+  {{ if not (hasSuffix "d2c" "{{gitBranch}}") }}
+  - name: deploy_to_k8s_cluster
+    configuration:
+      nodePool: pipelines_u20_t3small
+      dependencyMode:
+        waitOnChildComplete: true
+    steps:
+      - name: deploy_to_k8s_cluster
+        type: Bash
+        configuration:
+          runtime:
+            type: image
+            image:
+              custom:
+                name: jfpip.jfrog.io/jfrog/pipelines-tools
+                tag: latest
+                registry: bsEntPlus
+                sourceRepository: dev-releases-docker-local
+          chronological: true
+          environmentVariables:
+            GOOGLE_APPLICATION_CREDENTIALS: "account.json"
+            ACTION: "UPSERT"
+            PIPELINES_REPLICA_COUNT: 1
+            RT_VERSION:
+              allowCustom: true
+              default: 7.53.3
+            PIPELINES_CHART_VERSION:
+              allowCustom: true
+              default: ""
+            JFROG_PLATFORM_CHART_VERSION:
+              allowCustom: true
+              default: 10.10.0-m002
+            MASTER_KEY: "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+            JOIN_KEY: "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE"
+            PIPELINES_VERSION:
+              allowCustom: true
+              default: ""
+              description: "Default it will take branch snapshot"
+          integrations:
+            - name: jfrog_dev
+            - name: pipeline_chart_creds
+            - name: awsStg
+            - name: entArt
+            - name: pipelines_mqtest_slack
+          outputResources:
+            - name: triggerLightWeightAutomation
+          inputResources:
+            - name: triggerDeployK8sEnv
+            - name: branchSnapshotBag
+            {{ if or (hasPrefix "feature" "{{gitBranch}}") (hasPrefix "bugfix" "{{gitBranch}}") }}
+              trigger: false
+            {{ end }}  
+            - name: cpGit
+              trigger: false
+            - name: k8sArtifacts
+        execution:
+          onStart:
+            - echo $PIPELINES_VERSION
+            - echo $NAMESPACE
+          onExecute:
+            - pushd $res_cpGit_resourcePath
+            - NORMALIZED_VERSION=$(./normalizeReleaseVersion.sh {{gitBranch}})
+            - releaseVersion=$NORMALIZED_VERSION
+            - RT_DOCKER_REPO=$res_branchSnapshotBag_registryUrl
+            - export HELM_REPO=$res_branchSnapshotBag_helmRepo
+            - export PIPELINES_CHART_VERSION=$res_branchSnapshotBag_helmChartVersion
+            - |
+              if [ -z "$PIPELINES_CHART_VERSION" ]; then
+                export PIPELINES_CHART_VERSION="101.44.0-m000"
+              fi
+            - echo "pipelines_chart_version=$PIPELINES_CHART_VERSION" 
+            - export namespace=$NAMESPACE
+            - echo ${int_pipeline_chart_creds_PASSWORD}
+            - prefix="0.0.0-"
+            - |
+              if [ -z "$NAMESPACE" ]; then
+                export namespace=${releaseVersion#$prefix}
+                echo $namespace
+              fi
+            - |
+              if [ "{{gitBranch}}" == "master" ]; then
+                namespace="master"
+              fi
+            - pushd $res_cpGit_resourcePath/infra/chart
+            - |
+              if [ -z "$PIPELINES_VERSION" ]; then
+                export PIPELINES_VERSION=$res_branchSnapshotBag_snapshotVersion
+              fi
+            - ./parseVariables.sh ${namespace}
+            - echo $int_pipeline_chart_creds_license> credentials/artifactory.lic
+            - cp -vr $res_k8sArtifacts_resourcePath/k8s-sec.crt credentials/k8s-sec.crt
+            - cp -vr $res_k8sArtifacts_resourcePath/k8s-secret.key credentials/k8s-secret.key
+            - source env.conf; source credentials/creds.values; source configs/whiteList.values
+            - echo $int_jfrog_dev_jsonKey > account.json
+            - gcloud auth activate-service-account pipe-master-466@jfrog-dev.iam.gserviceaccount.com --key-file=account.json
+            - replace_envs credentials/creds.values configs/route53.json configs/pipelines.yaml configs/artifactory.yaml configs/insight.yaml
+            - ./deploytoK8s.sh
+            - |
+              if [[ $step_triggered_by_resource_name == "branchSnapshotBag" || "${releaseVersion#$prefix}" == "$namespace" ]]; then
+                write_output triggerLightWeightAutomation "jpdUrl=https://${namespace}.jfrog-pipelines.com"
+                write_output triggerLightWeightAutomation "joinKey=$JOIN_KEY"
+                write_output triggerLightWeightAutomation "stepId=$step_id"
+                write_output triggerLightWeightAutomation "namespace=$namespace"
+                write_output triggerLightWeightAutomation "d2c=false"
+              fi
+            - popd
+          onFailure:
+            {{ if eq "master" "{{gitBranch}}" }}
+            - send_notification pipelines_mqtest_slack --text "Pipeline - $pipeline_name | Step - $step_name \n Committer - <$committer> <@ambrishs> <@jasmeets> \n Commit - $res_auto_gitRepo_commitSha $res_auto_gitRepo_commitMessage \n Branch - $res_auto_gitRepo_branchName \n URL - $step_url"
+            {{ else }}
+            - send_notification pipelines_mqtest_slack --text "Pipeline - $pipeline_name | Step - $step_name \n Committer - <$committer> \n Commit - $res_auto_gitRepo_commitSha $res_auto_gitRepo_commitMessage \n Branch - $res_auto_gitRepo_branchName \n URL - $step_url"
+            {{ end }}
+  {{ end }}
+
+  {{ if hasPrefix "master" "{{gitBranch}}" }}
+  - name: custom_cert_env
+    steps:
+      - name: deploy_ccert
+        type: HelmDeploy
+        configuration:
+          inputResources:
+            - name: cpGit
+              trigger: false
+            - name: customEnvVersionWH
+              trigger: true
+            - name: platformChart
+              trigger: false
+          integrations:
+            - name: ccert_kubeconfig
+            - name: entArt
+          helmVersion: 3
+          flags: "-n ccert"
+          valueFilePaths:
+            - $res_cpGit_resourcePath/infra/chart/configs/ccert-platform.yaml
+            - $res_cpGit_resourcePath/infra/chart/configs/alwaysPullPlatform.yaml
+          releaseName: ccert
+        execution:
+          onStart:
+            - pushd $res_cpGit_resourcePath/infra/chart
+            - export pipelines_version=$(echo $res_customEnvVersionWH_payload | jq '.pipelines_version' -r)
+            - echo $pipelines_version
+            - export rt_version="$(echo $res_customEnvVersionWH_payload | jq '.rt_version' -r )"
+            - if [ "$pipelines_version" == "null" ] || [ "$rt_version" == "null" ]; then echo "Both pipelines_version and rt_version are required"; return 1; fi
+            - echo $rt_version
+            - replace_envs configs/ccert-platform.yaml
+            - cat configs/ccert-platform.yaml
+  {{ end }}
+
+  - name: pipeline_api_performance_regression
+    steps:
+      - name: pipeline_performance
+        type: Jenkins
+        configuration:
+          inputResources:
+            - name: environmentSetupBag
+              trigger: false
+          integrations:
+            - name: jenkins_entplus_ci
+          jenkinsJobName: pipelines-performance
+  {{ if eq "master" "{{gitBranch}}" }}
+  - name: CP_build_status_notification
+    configuration:
+      dependencyMode:
+        waitOnParentComplete: true
+      inputResources:
+        - name: CP_buildStatusUpdate
+        - name: controlplane_1
+          trigger: false 
+      integrations:
+        - name: pipelines_build_status_slack
+        - name: entplus_pipelines
+    steps:
+      - name: CP_status_slack_notification
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+        execution:
+          onExecute:
+            - |
+              statusCode=$(curl --location --request GET "https://entplus.jfrog.io/pipelines/api/v1/runs/${res_CP_buildStatusUpdate_runId}" --header "Content-Type:application/json" --header "Authorization:Bearer ${int_entplus_pipelines_admin_token}" | jq -r '.statusCode')
+            - echo "statusCode - $statusCode"
+            - |
+              if [ $statusCode == 4003 ] # if run status code is failure only then fire the slack notificaion
+                then
+                  exit 1
+              fi
+          onFailure:
+            - source ${res_controlplane_1_resourcePath}/build/ci/pipelines_build.sh
+            - build_status_notification
+  {{ end }}

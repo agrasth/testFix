@@ -1,0 +1,6 @@
+boto3
+slack-sdk>=3.12,<4
+gspread
+oauth2client
+psycopg2
+pytz

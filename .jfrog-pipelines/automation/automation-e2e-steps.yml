@@ -1,0 +1,124 @@
+pipelines:
+  - name: e2e_execute
+    steps:
+      - name: pipe_e2e_tests
+        type: Bash
+        configuration:
+          inputResources:
+            - name: pipelines_utp_deployment
+          integrations:
+            - name: bsBitbucket
+            - name: entArt
+            - name: test_automation
+          environmentVariables:
+            JFROGPLATFORM_URL:
+              description: The base URL of the instance that will be tested
+              default: "${res_pipelines_utp_deployment_PLATFORM_URL}"
+              allowCustom: true
+            JFROGPLATFORM_ADMIN_USER:
+              description: The admin username for the instance
+              default: "${res_pipelines_utp_deployment_PLATFORM_ADMIN_USER}"
+              allowCustom: true
+            JFROGPLATFORM_ADMIN_PASSWORD:
+              description: The admin password for the instance
+              default: "${res_pipelines_utp_deployment_PLATFORM_ADMIN_PASSWORD}"
+              allowCustom: true
+            JFROGPLATFORM_VERSION:
+              description: The Pipelines version to be tested
+              default: "${res_pipelines_utp_deployment_VERSION}"
+              allowCustom: true
+            sourceRepoFullName:
+              description: The SCM repository that will be used as a pipeline source in the tests
+              default: PIPA/Org_test_Automation
+              allowCustom: true
+              values:
+                - PIP/automation-e2e-ymls
+                - PIPA/Org_test_Automation
+            sourceRepoBranch:
+              description: The branch that will be added as a pipeline source in the tests
+              default: master
+              allowCustom: true
+            scmUrl:
+              description: The URL for the SCM
+              default: ${int_test_automation_GITHUB_URL}
+              allowCustom: true
+              values:
+                - ${int_bsBitbucket_url}
+                - ${int_test_automation_GITHUB_URL}
+            scmUserName:
+              description: The user name of the SCM
+              default: "PIPA"
+              allowCustom: true
+              values:
+                - "PIPA"
+                - ${int_bsBitbucket_username}
+            scmToken:
+              description: The token for the SCM
+              default: ${int_test_automation_GITHUB_TOKEN}
+              allowCustom: true
+              values:
+                - ${int_bsBitbucket_url}
+                - ${int_test_automation_GITHUB_TOKEN}
+            scmDisplayName:
+              description: The name of the SCM
+              default: "GitHub"
+              allowCustom: true 
+              values:
+                - "Bitbucket Server"
+                - "GitHub"         
+        execution:
+          onStart:
+            - rm -rf testKey | true
+            - mkdir testKey
+            - cd testKey
+            - |
+              cat >keyConf <<EOF
+                   %echo Generating a basic OpenPGP key
+                   Key-Type: RSA
+                   Key-Length: 2048
+                   Name-Real: jfrog pipelines
+                   Name-Comment: e2e
+                   Name-Email: jfrogAutomation@jfrog.com
+                   Expire-Date: 0
+                   %no-protection
+                   # Do a commit here, so that we can later print "done" :-)
+                   %commit
+                   %echo done
+              EOF
+            - cat keyConf
+            - gpg --verbose --batch --gen-key keyConf
+            - gpg --output pri.key --armor --export-secret-keys jfrogAutomation@jfrog.com
+            - gpg --output pub.key --armor --export jfrogAutomation@jfrog.com
+            - |
+              cat > gpg.json << EOF
+                {
+                  "public_key":  "`cat pub.key`",
+                  "private_key": "`cat pri.key`"
+                }
+              EOF
+            - testURL=$JFROGPLATFORM_URL"/distribution/api/v1/keys/gpg"
+            - echo $testURL
+            - curl -uadmin:$JFROGPLATFORM_ADMIN_PASSWORD -H "Accept:application/json" -H "Content-Type:application/json" -X PUT $testURL -T gpg.json -Lvvv
+            - curl -uadmin:$JFROGPLATFORM_ADMIN_PASSWORD -H "Accept:application/json" -X POST $testURL/propagate -Lvvv
+          onExecute:
+            - echo "Running e2e tests against ${JFROGPLATFORM_URL} version ${JFROGPLATFORM_VERSION}"
+            - jfrog rt docker-pull entplus.jfrog.io/jfrog/pipelines-automation-e2e:${JFROGPLATFORM_VERSION} pipelines-docker
+            - mkdir -p ${step_workspace_dir}/cypress/videos
+            - mkdir -p ${step_workspace_dir}/cypress/screenshots
+            - |
+              docker run \
+                -v ${step_workspace_dir}/cypress/videos:/tests/cypress/videos \
+                -v ${step_workspace_dir}/cypress/screenshots:/tests/cypress/screenshots \
+                -e CYPRESS_BASE_URL="$JFROGPLATFORM_URL" \
+                -e cypress_artifactoryAdminUserName="$JFROGPLATFORM_ADMIN_USER" \
+                -e cypress_artifactoryAdminPassword="$JFROGPLATFORM_ADMIN_PASSWORD" \
+                -e cypress_scmUrl="$scmUrl" \
+                -e cypress_scmUserName="$scmUserName" \
+                -e cypress_scmToken="$scmToken" \
+                -e cypress_scmDisplayName="$scmDisplayName" \
+                -e cypress_sourceRepoFullName="$sourceRepoFullName" \
+                -e cypress_sourceRepoBranch="$sourceRepoBranch" \
+                entplus.jfrog.io/jfrog/pipelines-automation-e2e:${JFROGPLATFORM_VERSION}
+          onFailure:
+            - add_run_files ${step_workspace_dir}/cypress cypress
+            

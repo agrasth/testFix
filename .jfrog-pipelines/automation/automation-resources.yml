@@ -1,0 +1,237 @@
+resources:
+  - name: ubuntu_18_static_vm 
+    type: PropertyBag
+    configuration:
+      ip_address: ''
+      
+  - name: ubuntu_20_static_vm
+    type: PropertyBag
+    configuration:
+      ip_address: ''
+
+  - name: redhat_7_static_vm
+    type: PropertyBag
+    configuration:
+      ip_address: ''
+
+  - name: centos_7_static_vm
+    type: PropertyBag
+    configuration:
+      ip_address: ''
+
+  - name: auto_gitRepo
+    type: GitRepo
+    configuration:
+      path: PIP/controlplane
+      gitProvider: bsBitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bautomation\/tests\/.+\b
+
+  - name: nightly_gitRepo
+    type: GitRepo
+    configuration:
+      path: PIP/controlplane
+      gitProvider: bsBitbucket
+      branches:
+        include: ^master$
+      files:
+        include: \bautomation\/tests\/.+\b
+
+  - name: Org_test_Automation_BBS
+    type: GitRepo
+    configuration:
+      path: PIPA/Org_test_Automation
+      gitProvider: test_automation_bbs_new
+      branches:
+        include: ^master$
+
+  - name: Org_test_Automation_bash_BBS
+    type: GitRepo
+    configuration:
+      path: PIPA/Org_test_Automation_bash
+      gitProvider: test_automation_bbs_new
+      branches:
+        include: ^master$
+
+  - name: Org_test_Automation_PowerShell_BBS
+    type: GitRepo
+    configuration:
+      path: PIPA/Org_test_Automation_PowerShell
+      gitProvider: test_automation_bbs_new
+      branches:
+        include: ^master$
+
+  - name: xrayGit
+    type: GitRepo
+    configuration:
+      path: PIP/controlplane
+      gitProvider: bsBitbucket
+      branches:
+        include: ^master$
+
+  - name: automation_templateFS
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipelines-artifacts/template/pipelines-template-*-linux-amd64"
+      props: vcs.branch={{gitBranch}}
+      flat: true
+
+  - name: automation_templateFS_master
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipelines-artifacts/template/pipelines-template-0.0.0-m000-linux-amd64"
+      recursive: false
+      flat: true
+
+  - name: Org_test_Automation_Private_BBS
+    type: GitRepo
+    configuration:
+      path: PIPA/Org_test_Automation_Private
+      gitProvider: test_automation_bbs_new
+      branches:
+        include: ^master$
+
+  - name: org_test_automation_MultiBranch_BBS
+    type: GitRepo
+    configuration:
+      path: PIPA/org_test_automation_MultiBranch
+      gitProvider: test_automation_bbs_new
+      branches:
+        include: ^master$
+
+  - name: updated_grep_resource
+    type: PropertyBag
+    configuration:
+      GREP: ""
+
+  - name: cypress_gitRepo
+    type: GitRepo
+    configuration:
+      path: PIP/controlplane
+      gitProvider: bsBitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bservices\/frontend\/e2e\/.+\b
+      
+  - name: automationArtifact
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipe-automation-artifacts/*"
+      recursive: false
+      flat: true
+  - name: list_grep_resource
+    type: PropertyBag
+    configuration:
+      GREP: ""
+      LIST: ""
+      ITERATION: "1"
+
+  - name: nightlyAutomationBuild
+    type: CronTrigger
+    configuration:
+      interval: "0 1 * * *"
+      branches:
+        include: "^master$"
+
+  {{ if eq "master" "{{gitBranch}}" }}
+  - name: cpGitNamespace
+    type: GitRepo
+    configuration:
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^(bugfix|feature)\/.*$
+      buildOn:
+        branchDelete: true
+        commit: false
+  {{ end }}        
+
+{{ if eq "master" "{{gitBranch}}" }}
+  - name: clearTestingInstanceCron
+    type: CronTrigger
+    configuration:
+      interval: "0 */2 * * *"
+  - name: canaryPipelineTrigger
+    type: CronTrigger
+    configuration:
+      interval: "0 * * * *"
+{{ end }}
+
+  - name: noMqtest
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: (\btools\/onebox\/.+\b)|README.md|(\b.jfrog-pipelines\/automation\/.+\b)
+
+  - name: iTestReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: scmReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: iTestNativeReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: iTestNonDefaultReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: awsReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: gcpReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: azureReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: cypressReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: apiReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: miscReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: webhookReleaseApprovalBag
+    type: PropertyBag
+    configuration:
+      APPROVAL_STATUS: ''
+
+  - name: connecting_resource_node_test
+    type: PropertyBag
+    configuration:
+      key: value

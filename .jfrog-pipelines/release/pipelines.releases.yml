@@ -1,0 +1,3 @@
+include:
+  template: devx/ci-next/2.0.2
+valuesFilePath: ./values.yml

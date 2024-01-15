@@ -1,0 +1,114 @@
+automation:
+  scmTestFiles:
+    - name: validateEntitlementsValues
+      file: core/entitlements/validateEntitlementsValues.js
+    - name: verifyPipeInfo
+      file: core/pipeInfo/verifyPipeInfo.js
+    - name: helmPublishAndDeploy
+      file: core/templates/HelmPublishAndDeploy.js
+    - name: dockerBuildAndPush
+      file: core/templates/DockerBuildAndPush.js
+    - name: helloWorld
+      file: core/templates/HelloWorld.js
+    - name: extension
+      file: core/extensions/*.js
+    - name: gitRepoWebhook
+      file: core/webhooks/gitRepoWebhook.js
+    - name: helmPublishAndDeploySCM
+      file: core/templates/SCM/HelmPublishAndDeploy.js
+    - name: inlineTemplates
+      file: core/templates/SCM/InlineTemplates.js
+    - name: localTemplates
+      file: core/templates/SCM/localTemplates.js
+    - name: templatesSCM
+      file: core/templates/SCM/templates.js
+    - name: pipelineSources
+      file: core/api/pipelineSources.js
+    - name: templates
+      file: core/api/templates.js
+    - name: templateSources
+      file: core/api/templateSources.js
+    - name: pipelinesSync
+      file: core/pipelines/Sync/pipelines.js
+    - name: pipelineSourcesSync
+      file: core/pipelines/Sync/pipelineSources.js
+    - name: pipelines
+      file: core/pipelines/pipelines.js
+    - name: pipelineSourcesPipelines
+      file: core/pipelines/pipelineSources.js
+    - name: pipelineSourcesSCM
+      file: core/pipelines/SCM/pipelineSources.js
+    - name: generic
+      file: core/resources/Generic.js
+    - name: generic2
+      file: core/resources/Generic2.js
+    - name: gitRepoCloneProtocol
+      file: core/resources/GitRepoCloneProtocol.js
+    - name: pipelineWorkflow2
+      file: core/workFlow/pipeline/scm/pipelineWorkflow2.js
+    - name: pipeInfo
+      file: core/pipeInfo/pipeInfo.js
+    - name: extensionSources
+      file: core/api/extensionSources.js
+    - name: genericMultibranch
+      file: core/multibranch/generic/genericMultibranch.js
+    - name: resourcesMultibranch
+      file: core/multibranch/resources/*.js
+    - name: pipelinesMultibranch
+      file: core/multibranch/pipelines/*.js
+    - name: pipelineSourcesMultibranch
+      file: core/pipelineSources/*.js
+    - name: githubHttpsWebhook
+      file: core/multibranch/githubHttpsWebhook.js
+    - name: workspace
+      file: core/workspace/*.js
+  scmTestFilesBash:
+    - name: MatrixSync
+      file: core/steps/Bash/BashNative/MatrixSync.js
+    - name: pinVersion
+      file: core/resources/Bash/pinVersion.js
+
+baseImageVersion: "3.5.4"
+goBuildVersion: "1.21.5"
+
+statusPage:
+  integration: STATUS_PAGE
+  incidentName: Pipelines Master Builds are Failing
+  componentId: x4fssghc63nh
+  incidentStatus: investigating
+  incidentBody: "Build Failed"
+  pageId: g41nrwjr14hb
+
+nodePoolProperty:
+  - name: pipelines_u18
+    type: Bash
+  - name: pipelines_u20
+    type: Bash
+  - name: pipelines_c7
+    type: Bash
+  - name: pipelines_w19
+    type: Powershell
+  - name: pipelines_kubernetes_u20
+    type: Bash
+  - name: pipelines_gcp_u18
+    type: Bash
+  - name: pipelines_gcp_u20
+    type: Bash
+  - name: pipelines_gcp_c7
+    type: Bash
+  # The ones below are not working yet. Probably wrong nodepool configuration
+  # - name: pipelines_az_u18
+  #   type: Bash
+  # - name: pipelines_az_u20
+  #   type: Bash
+  # - name: pipelines_az_c7
+  #   type: Bash
+  # - name: pipelines_az_win_2019  
+  #   type: Powershell
+
+build:
+  - os: Ubuntu_22.04
+    alias: U22
+    arch:
+      - name: ARM64
+      - name: x86_64

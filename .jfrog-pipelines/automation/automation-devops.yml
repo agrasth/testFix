@@ -1,0 +1,114 @@
+pipelines:
+{{ if eq "master" "{{gitBranch}}" }}
+  - name: clean_old_namespaces
+    steps:
+      - name: run_python_cleanup_script
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          inputResources:
+            - name: auto_gitRepo
+              trigger: false
+            - name: nightlyAutomationBuild
+          environmentVariables:
+            age_to_delete:
+              default: 10
+              description: Checks namespaces older than the provided value
+              allowCustom: true
+          integrations:
+            - name: k8s_gcp_dev_pipeline_usw
+            - name: entplus_deployer
+            - name: slack_pipelines_namespace_cleanup_alert
+            - name: pipelines_cleanup_jira_integration
+        execution:
+          onExecute:
+            - cd ${res_auto_gitRepo_resourcePath}/.jfrog-pipelines/automation/namespace-cleanup
+            - pip3 install -r requirements.txt
+            - echo "Checking namespaces which are older than ${age_to_delete} days"
+            - export NAMESPACES_TO_DELETE=$(python3 cleanup_ns.py $age_to_delete ${int_pipelines_cleanup_jira_integration_url} ${int_pipelines_cleanup_jira_integration_username} ${int_pipelines_cleanup_jira_integration_token})
+            - echo "SLACK message is as follows - $NAMESPACES_TO_DELETE"
+          onSuccess:
+            - task: jfrog/slack-notify@latest
+              input:
+                slackIntegration: "slack_pipelines_namespace_cleanup_alert"
+                message: "$NAMESPACES_TO_DELETE"
+  - name: pipelines_xray_rules
+    configuration:
+      integrations:
+        - name: security_xray_access_token
+        - name: jira_jfrog
+      environmentVariables:
+        readOnly:
+          inputBuildName: ""
+          inputBuildNumber: ""
+    steps:
+      - name: create_xray_ignore_rules
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          inputResources:
+            - name: xrayGit
+              trigger: false
+          integrations:
+            - name: entplus_jfrog_io_docker
+        execution:
+          onExecute:
+            - source "${res_xrayGit_resourcePath}/build/ci/xray_violation_handler.sh"
+            - run_violation_handler ${inputBuildName} ${inputBuildNumber} || echo "failed to add ignore rule"
+{{ end }}
+{{ if not (hasPrefix "preRelease" "{{gitBranch}}") }}
+  - name: approvalgate_nomqtest
+    configuration:
+      nodePool: pipelines_u20_t3small
+      integrations:
+        - name: docker_jfrog_io_reader
+        - name: entplus_jfrog_io_docker
+        - name: entplus_deployer      
+    steps:
+      - name: pipelines_no_mqtest
+        type: Bash
+        configuration:
+          nodePool: pipelines_u20_t3small
+          chronological: true
+          integrations:
+            - name: pipelines_release_notifications
+            - name: entplus_deployer
+          inputResources:
+            - name: noMqtest
+              trigger: true
+            - name: branchSnapshotBag
+              trigger: false              
+        execution:
+          onStart:
+            - source ${res_noMqtest_resourcePath}/build/ci/pipelines_step_setup.sh
+            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
+            - on_start
+          onExecute:
+            - echo "no mqtest required for this step"
+          onFailure:
+            - stepCommons_on_failure
+          onSuccess:
+            - stepCommons_on_success
+          onComplete:
+            - stepCommons_on_complete
+
+      - name: tl_approval_gate_without_mqtest
+        type: Bash
+        configuration:
+          inputResources:
+            - name: cpGit
+              trigger: false
+            - name: branchSnapshotBag
+              trigger: false  
+          nodePool: pipelines_u20_t3small
+          requiresApproval:
+            approvers:
+              - yashprits
+              - nishiths
+              - vivekk
+            notifications:
+              - integrationName: pipelines_no_mqtest
+        execution:
+          onExecute:
+            - echo "Got the approval from Team Lead to bypass mqtest"
+  {{end}}

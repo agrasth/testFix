@@ -1,0 +1,775 @@
+template: true
+valuesFilePath: ./values.yml
+
+resources:
+
+  {{ if eq "master" "{{gitBranch}}" }}
+  - name: pipelines_master
+    type: GitRepo
+    configuration:
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^master$
+      files:
+        exclude: (\bbuildplane\/.+\b|\btools\/onebox\/.+\b)|README.md|(\b.jfrog-pipelines\/automation\/.+\b)
+  {{end}}
+
+  - name: pipelines_bitbucket
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        exclude: (\bbuildplane\/.+\b|\btools\/onebox\/.+\b)|README.md|(\b.jfrog-pipelines\/automation\/.+\b)
+
+  - name: wwwGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bservices\/www\/.+\b
+
+  - name: frontendGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bservices\/frontend\/.+\b
+  
+  - name: nodePoolServiceGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bservices\/nodepool-service\/.+\b
+
+  - name: stepServiceGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bservices\/step-service\/.+\b
+
+  - name: runServiceGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bservices\/run-service\/.+\b
+
+  - name: logServiceGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bservices\/log-service\/.+\b
+
+  - name: analyticsServiceGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bservices\/analytics-service\/.+\b
+
+  - name: apiGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bservices\/api\/.+\b
+
+  - name: packagesGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bpackages\/.+\b
+
+  - name: microGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bmicro\/.+\b
+
+  - name: installerGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \binstaller\/.+\b
+  
+  - name: bddGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: (\bmicro\/.+\b)|(\bbdd\/.+\b)|(\btools\/ms-testing-library\/.+\b)
+
+  - name: bddGit_pipelineSync
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: (\bmicro\/pipelineSync\/.+\b)|(\bbdd\/src\/pipelineSync\/.+\b)|(\btools\/ms-testing-library\/.+\b) | (\bpackages\/validators\/.+\b)|(\bmicro\/_global\/.+\b)
+
+  - name: msgGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \binstaller\/dependencies\/docker\/msg\/.+\b
+
+  - name: redisGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \binstaller\/dependencies\/docker\/redis\/.+\b
+
+  - name: observabilityGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \binstaller\/dependencies\/docker\/observability\/.+\b        
+
+  - name: routerGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \binstaller\/dependencies\/docker\/router\/.+\b
+
+  - name: vaultGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \binstaller\/dependencies\/docker\/vault\/.+\b
+
+  - name: vaultInitGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \binstaller\/dependencies\/docker\/vault.init\/.+\b
+
+  - name: postgresGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \binstaller\/dependencies\/docker\/postgres\/.+\b
+
+  - name: k8sNodeGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bk8s.node\/.+\b
+
+  - name: cpGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        exclude: (\bservices\/frontend\/.+\b|\bbuildplane\/.+\b|\btools\/onebox\/.+\b)|README.md|(\b.jfrog-pipelines\/automation\/.+\b)
+
+  - name: chartGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bchart.+\b
+
+  - name: machineImageJSON_fs
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipelines-artifacts/imagebuilds/base-images/${baseMachineImageVersion}-buildplaneImages.json"
+      recursive: false
+      flat: true
+
+  - name: docker_fs
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "docker-versions-cache/docker-${dockerVersion}.tgz"
+      recursive: false
+
+  - name: buildPlaneFS_cp
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipelines-artifacts/buildPlane/buildPlane-*-${buildPlaneVersion}.*"
+      recursive: false
+      flat: true
+
+  - name: dockerCompose_fs
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipelines-artifacts/installer/docker/docker-compose-${dockerComposeVersion}"
+      recursive: false
+
+  - name: k8sArtifacts
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipe-automation-artifacts/*"
+      recursive: false
+      flat: true      
+
+  - name: curl_tar_fs
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "third-party-releases-local/curl/curl/7.74.0/curl-7.74.0.tar.gz"
+      recursive: false
+
+  - name: curl_rpm_fs
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipelines-artifacts/installer/curl/curl-7.29.0-59.el7.x86_64.rpm"
+      recursive: false
+
+  - name: ootbExtensionsFS_cp
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipelines-artifacts/extensions/extensions-${buildPlaneVersion}.tar.gz"
+      recursive: false
+      flat: true
+
+  - name: pipe_master_wh
+    type: IncomingWebhook
+    configuration:
+      webhookName: deployMaster
+
+  - name: pipe_rc_wh
+    type: IncomingWebhook
+    configuration:
+      webhookName: deployRC
+
+  - name: autoScripts
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/automation
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \binstall\/.+\b
+
+  - name: entplusBag
+    type: PropertyBag
+    configuration:
+      info: ""
+
+  - name: k8s_deploy_input
+    type: PropertyBag
+    configuration:
+      rtVersion: ""
+
+  - name: k8s_cleanup_input
+    type: PropertyBag
+    configuration:
+      namespace: ""
+
+  - name: templateGit
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \btemplate\/.+\b
+
+  - name: templateFS
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipelines-artifacts/template/pipelines-template-*"
+      props: vcs.branch={{gitBranch}}
+      recursive: false
+      flat: true
+
+  - name: microBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-micro
+      buildNumber: ${run_id}
+
+  - name: msgBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-msg
+      buildNumber: ${run_id}
+
+  - name: postgresBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-postgres
+      buildNumber: ${run_id}
+
+  - name: routerBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-router
+      buildNumber: ${run_id}
+
+  - name: vaultBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-vault
+      buildNumber: ${run_id}
+
+  - name: redisBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-redis
+      buildNumber: ${run_id}
+
+  - name: observabilityBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-observability
+      buildNumber: ${run_id}      
+
+  - name: vaultInitBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-vaultInit
+      buildNumber: ${run_id}
+
+  - name: wwwBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-www
+      buildNumber: ${run_id}
+
+  - name: frontendBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-frontend
+      buildNumber: ${run_id}
+
+  - name: nodepoolserviceBuildInfo
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines-nodepoolservice
+      buildNumber: ${run_id}
+
+  - name: ootbExtensionsJSONFS
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipelines-artifacts/buildPlane/${buildPlaneVersion}-ootb-extensions.json"
+      recursive: false
+      flat: true
+
+  - name: monorepo
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: JFROG/artifactory
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^master$
+
+  - name: helm_build_wh
+    type: OutgoingWebhook
+    configuration:
+      webhookName: pipelines_helm_build
+      method: POST
+      headers:
+        Content-type: "application/json"
+
+  - name: pipelines_helm_build_info
+    type: BuildInfo
+    configuration:
+      sourceArtifactory: entArt
+      buildName: pipelines_helm
+      buildNumber: ${run_id}
+
+  - name: auto_e2e_gitRepo
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \bautomation\/e2e\/.+\b
+
+  - name: branchSnapshotBag
+    type: PropertyBag
+    configuration:
+      snapshotVersion: ""
+
+  - name: triggerDeployK8sEnv
+    type: PropertyBag
+    configuration:
+      runId: ""      
+
+  - name: environmentSetupBag
+    type: PropertyBag
+    configuration:
+      pipelinesVersion: ""
+      serverName: ""
+      masterKey: ""
+
+  - name: environmentOperateBag
+    type: PropertyBag
+    configuration:
+      pipelinesVersion: ""
+      serverName: ""
+
+  - name: triggerLightWeightAutomation
+    type: PropertyBag
+    configuration:
+      jpdUrl: ""
+      joinKey: ""
+      branchPipelinesVersion: ""
+      d2c: ""
+
+  - name: releasesFile
+    type: GitRepo
+    configuration:
+      cancelPendingRunsOn:
+        pullRequestUpdate: true
+        newCommit: true
+      path: PIP/controlplane
+      gitProvider: JFrog_bitbucket
+      branches:
+        include: ^{{gitBranch}}$
+      files:
+        include: \breleases.properties\b
+
+  - name: thanosPassoff
+    type: PropertyBag
+    configuration:
+      url: ""
+
+  - name: node16BuildImage
+    type: Image
+    configuration:
+      registry: entplus_jfrog_io_docker
+      sourceRepository: jfrog-docker
+      imageName: entplus.jfrog.io/pipelines-docker-release-local/jfrog/pipelines-node16-build-base
+      imageTag: {{ .Values.baseImageVersion }}
+
+  - name: node16MicroRunImage
+    type: Image
+    configuration:
+      registry: entplus_jfrog_io_docker
+      sourceRepository: jfrog-docker
+      imageName: entplus.jfrog.io/pipelines-docker-release-local/jfrog/pipelines-micro-node16-base
+      imageTag: {{ .Values.baseImageVersion }}
+
+  - name: installerBaseImage
+    type: Image
+    configuration:
+      registry: entplus_jfrog_io_docker
+      sourceRepository: jfrog-docker
+      imageName: entplus.jfrog.io/pipelines-docker-release-local/jfrog/pipelines-installer-base
+      imageTag: {{ .Values.baseImageVersion }}
+
+  - name: triggerSaasAutomation
+    type: PropertyBag
+    configuration:
+      jpdUrl: ""
+      joinKey: ""
+      branchPipelinesVersion: ""
+
+  - name: saasEnvironmentSetupBag
+    type: PropertyBag
+    configuration:
+      pipelinesVersion: ""
+      serverName: ""
+      masterKey: ""
+
+  - name: automationArtifacts
+    type: FileSpec
+    configuration:
+      sourceArtifactory: entArt
+      pattern: "pipe-automation-artifacts/*"
+      recursive: false
+      flat: true
+
+  {{ if hasPrefix "master" "{{gitBranch}}" }}
+  - name: customEnvVersionWH
+    type: IncomingWebhook
+    configuration:
+      webhookName: customCertTrigger
+
+  - name: platformChart
+    type: HelmChart
+    configuration:
+     sourceArtifactory: entplus_deployer
+     repository: pipe-charts-jfrog-io
+     chart: jfrog-platform
+     version: 10.8.2
+  {{ end }}
+      
+  {{ if or (eq "master" "{{gitBranch}}") (hasPrefix "preRelease" "{{gitBranch}}") (hasPrefix "milestone" "{{gitBranch}}") (hasSuffix "full" "{{gitBranch}}") }}
+  {{ if eq "master" "{{gitBranch}}" }}
+  - name: nightlyCron
+    type: CronTrigger
+    configuration:
+      interval: "0 12 * * *"
+  {{ end }}
+
+  - name: nightlyEnvDetails
+    type: PropertyBag
+    configuration:
+      version: ""
+      name: ""
+
+  - name: itestNonScm
+    type: PropertyBag
+    configuration:
+      URL: ""
+      JPD_JOIN_KEY: ""
+      JPD_PASSWORD: ""
+  
+  - name: itestScm
+    type: PropertyBag
+    configuration:
+      URL: ""
+      JPD_JOIN_KEY: ""
+      JPD_PASSWORD: ""
+  
+  - name: itestNativeSteps
+    type: PropertyBag
+    configuration:
+      URL: ""
+      JPD_JOIN_KEY: ""
+      JPD_PASSWORD: ""
+
+  - name: itestMisc
+    type: PropertyBag
+    configuration:
+      URL: ""
+      JPD_JOIN_KEY: ""
+      JPD_PASSWORD: ""
+
+  - name: itestNonDefault
+    type: PropertyBag
+    configuration:
+      URL: ""
+      JPD_JOIN_KEY: ""
+      JPD_PASSWORD: ""
+  
+  - name: itestSaaSGeneric
+    type: PropertyBag
+    configuration:
+      JPD_JOIN_KEY: ""
+      JPD_PASSWORD: ""
+  
+  - name: itestAZSaas
+    type: PropertyBag
+    configuration:
+      URL: ""
+
+  - name: itestGCPSaas
+    type: PropertyBag
+    configuration:
+      URL: ""
+
+  - name: itestAWSSaas
+    type: PropertyBag
+    configuration:
+      URL: ""
+
+  - name: itestWebhooks
+    type: PropertyBag
+    configuration:
+      URL: ""
+
+  - name: cypressTest
+    type: PropertyBag
+    configuration:
+      URL: ""
+      JPD_JOIN_KEY: ""
+      JPD_PASSWORD: ""
+  {{ end }}
+  {{ if eq "master" "{{gitBranch}}" }}
+  - name: nightlyBuild
+    type: CronTrigger
+    configuration:
+      interval: "0 1 * * *"
+  - name: CP_buildStatusUpdate
+    type: PropertyBag
+    configuration:
+      runId: ""
+  {{ end }}

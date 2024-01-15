@@ -1,0 +1,8 @@
+resources:
+  - name: pipelines_utp_deployment
+    type: PropertyBag
+    configuration:
+      PLATFORM_URL: dummy
+      PLATFORM_ADMIN_USER: admin
+      PLATFORM_ADMIN_PASSWORD: password
+      VERSION: dummy

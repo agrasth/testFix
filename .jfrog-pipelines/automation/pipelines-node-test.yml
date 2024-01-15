@@ -1,0 +1,27 @@
+template: true
+valuesFilePath: ../values.yml
+
+{{ if eq "master" "{{gitBranch}}" }}
+pipelines:
+  - name: pipelines_node_test
+    steps:
+      - name: trigger_node_test
+        type: Bash
+        configuration:
+          outputResources: 
+            - name: connecting_resource_node_test
+        execution:
+          onExecute:
+            - write_output connecting_resource_node_test "test=value"
+      {{- range $nodePoolProperty := .Values.nodePoolProperty }}
+      - name: pipe_step_{{ $nodePoolProperty.name }}
+        type: {{ $nodePoolProperty.type }}
+        configuration:
+          nodePool: {{ $nodePoolProperty.name }}
+          inputResources:
+            - name: connecting_resource_node_test
+        execution:
+          onExecute:
+            - docker images
+      {{- end}}
+{{ end }}
