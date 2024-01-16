@@ -25,7 +25,7 @@ pipelines:
     configuration:
       retentionPolicy:
         maxAgeDays: 90
-        minRuns: 90
+        minRuns: 9
       environmentVariables:
         readOnly:
           buildPlaneVersion: "1.55.0"
@@ -111,7 +111,6 @@ pipelines:
           {{ end }}
             - name: releasesFile
               <<: *git_resource_trigger_condition
-            - name: buildCI
               trigger: false
         execution:
           onStart:
@@ -202,47 +201,6 @@ pipelines:
                 done
             - stepCommons_on_complete
 
-      - name: packages_sonar_scan
-        type: Bash
-        configuration:
-          condition: 'QUICK_MODE == "false"'
-          affinityGroup: packages
-          integrations:
-            - name: entplus_deployer
-            - name: sonar_jfrog_info
-          inputResources:
-            - name: packagesGit
-              trigger: false
-          inputSteps:
-            - name: packages_build
-          environmentVariables:
-            SONAR_PROJECT_KEY: 'pipelines_packages'
-            SONAR_PROJECT_BASE_DIR: './packages'
-            SONAR_QUALITYGATE_WAIT: 'false'
-            SONAR_ADDITIONAL_OPTIONS: '-X'
-            RUN_SONAR: 'true'
-          runtime:
-            type: image
-            image:
-              custom:
-                registry: entplus_deployer
-                sourceRepository: docker-staging-local
-                name: docker.jfrog.io/sonar-scanner
-                tag: ${SONAR_DOCKER_TAG:-latest}
-        execution:
-          onStart:
-            - source ${res_packagesGit_resourcePath}/build/ci/pipelines_step_setup.sh
-            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
-            - on_start
-          onExecute:
-            - on_execute
-          onFailure:
-            - stepCommons_on_failure
-          onSuccess:
-            - stepCommons_on_success
-          onComplete:
-            - stepCommons_on_complete
-
       - name: api_quality
         type: Bash
         configuration:
@@ -290,47 +248,6 @@ pipelines:
             - stepCommons_on_success
           onComplete:
             - save_tests $res_apiGit_resourcePath/services/api/api-unit.xml
-            - stepCommons_on_complete
-
-      - name: api_sonar_scan
-        type: Bash
-        configuration:
-          condition: 'QUICK_MODE == "false"'
-          affinityGroup: api
-          integrations:
-            - name: entplus_deployer
-            - name: sonar_jfrog_info
-          inputResources:
-            - name: apiGit
-              trigger: false
-          inputSteps:
-            - name: api_quality
-          environmentVariables:
-            SONAR_PROJECT_KEY: 'pipelines_api'
-            SONAR_PROJECT_BASE_DIR: './services/api'
-            SONAR_QUALITYGATE_WAIT: 'false'
-            SONAR_ADDITIONAL_OPTIONS: '-X'
-            RUN_SONAR: 'true'
-          runtime:
-            type: image
-            image:
-              custom:
-                registry: entplus_deployer
-                sourceRepository: docker-staging-local
-                name: docker.jfrog.io/sonar-scanner
-                tag: ${SONAR_DOCKER_TAG:-latest}
-        execution:
-          onStart:
-            - source ${res_apiGit_resourcePath}/build/ci/pipelines_step_setup.sh
-            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
-            - on_start
-          onExecute:
-            - on_execute
-          onFailure:
-            - stepCommons_on_failure
-          onSuccess:
-            - stepCommons_on_success
-          onComplete:
             - stepCommons_on_complete
 
       - name: inst_build
@@ -475,48 +392,6 @@ pipelines:
           onComplete:
             - stepCommons_on_complete
 
-      - name: inst_sonar_scan
-        type: Bash
-        configuration:
-          condition: 'QUICK_MODE == "false"'
-          affinityGroup: installer
-          integrations:
-            - name: entplus_deployer
-            - name: sonar_jfrog_info
-          inputResources:
-            - name: installerGit
-              trigger: false
-          inputSteps:
-            - name: inst_test
-          environmentVariables:
-            SONAR_PROJECT_KEY: 'pipelines_installer'
-            SONAR_PROJECT_BASE_DIR: './installer'
-            SONAR_QUALITYGATE_WAIT: 'false'
-            SONAR_ADDITIONAL_OPTIONS: '-X'
-            RUN_SONAR: 'true'
-          runtime:
-            type: image
-            image:
-              custom:
-                registry: entplus_deployer
-                sourceRepository: docker-staging-local
-                name: docker.jfrog.io/sonar-scanner
-                tag: ${SONAR_DOCKER_TAG:-latest}
-        execution:
-          onStart:
-            - source ${res_installerGit_resourcePath}/build/ci/pipelines_step_setup.sh
-            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
-            - on_start
-          onExecute:
-            - on_execute
-          onFailure:
-            - stepCommons_on_failure
-          onSuccess:
-            - stepCommons_on_success
-          onComplete:
-            - stepCommons_on_complete
-
-            
       - name: template_build
         type: Bash
         configuration:
@@ -943,47 +818,6 @@ pipelines:
           onComplete:
             - stepCommons_on_complete
 
-      - name: micro_sonar_scan
-        type: Bash
-        configuration:
-          condition: 'QUICK_MODE == "false"'
-          affinityGroup: micro
-          integrations:
-            - name: entplus_deployer
-            - name: sonar_jfrog_info
-          inputResources:
-            - name: microGit
-              trigger: false
-          inputSteps:
-            - name: micro_quality
-          environmentVariables:
-            SONAR_PROJECT_KEY: 'pipelines_micro'
-            SONAR_PROJECT_BASE_DIR: './micro/'
-            SONAR_QUALITYGATE_WAIT: 'false'
-            SONAR_ADDITIONAL_OPTIONS: '-X'
-            RUN_SONAR: 'true'
-          runtime:
-            type: image
-            image:
-              custom:
-                registry: entplus_deployer
-                sourceRepository: docker-staging-local
-                name: docker.jfrog.io/sonar-scanner
-                tag: ${SONAR_DOCKER_TAG:-latest}
-        execution:
-          onStart:
-            - source ${res_microGit_resourcePath}/build/ci/pipelines_step_setup.sh
-            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
-            - on_start
-          onExecute:
-            - on_execute
-          onFailure:
-            - stepCommons_on_failure
-          onSuccess:
-            - stepCommons_on_success
-          onComplete:
-            - stepCommons_on_complete
-
       - name: www_build
         type: Bash
         configuration:
@@ -1150,46 +984,6 @@ pipelines:
             - save_tests $res_runServiceGit_resourcePath/services/run-service/run-service-bdd.xml
             - stepCommons_on_complete
 
-      - name: runService_sonar_scan
-        type: Bash
-        configuration:
-          condition: 'QUICK_MODE == "false"'
-          affinityGroup: runService
-          integrations:
-            - name: entplus_deployer
-            - name: sonar_jfrog_info
-          inputResources:
-            - name: runServiceGit
-              trigger: false
-          inputSteps:
-            - name: runService_quality
-          environmentVariables:
-            SONAR_PROJECT_KEY: 'pipelines_run-service'
-            SONAR_PROJECT_BASE_DIR: './services/run-service'
-            SONAR_QUALITYGATE_WAIT: 'false'
-            SONAR_ADDITIONAL_OPTIONS: '-X'
-            RUN_SONAR: 'true'
-          runtime:
-            type: image
-            image:
-              custom:
-                registry: entplus_deployer
-                sourceRepository: docker-staging-local
-                name: docker.jfrog.io/sonar-scanner
-                tag: ${SONAR_DOCKER_TAG:-latest}
-        execution:
-          onStart:
-            - source ${res_runServiceGit_resourcePath}/build/ci/pipelines_step_setup.sh
-            - stepCommons_load_script build/ci/pipelines_sonar_npm.sh
-            - on_start
-          onExecute:
-            - on_execute
-          onFailure:
-            - stepCommons_on_failure
-          onSuccess:
-            - stepCommons_on_success
-          onComplete:
-            - stepCommons_on_complete
 
       - name: logService_build
         type: Bash
