@@ -22,6 +22,7 @@ resources:
         pullRequestUpdate: true
         newCommit: true
       path: PIP/controlplane
+      cloneProtocol: https
       gitProvider: JFrog_bitbucket
       branches:
         include: ^{{gitBranch}}$
