@@ -400,7 +400,7 @@ pipelines:
           integrations:
             - name: entplus_deployer
           inputResources:
-            - name: cpGit
+            - name: pipelines_bitbucket
               <<: *git_resource_trigger_condition
           inputSteps:
             - name: trigger_controlplane_builds
@@ -415,9 +415,9 @@ pipelines:
                   - {{ .Values.goBuildVersion }}
         execution:
           onStart:
-            - source ${res_cpGit_resourcePath}/build/ci/pipelines_step_setup.sh
+            - source ${res_pipelines_bitbucket_resourcePath}/build/ci/pipelines_step_setup.sh
             - stepCommons_load_script build/ci/pipelines_build_go.sh
-            - pushd $res_cpGit_resourcePath
+            - pushd $res_pipelines_bitbucket_resourcePath
             - add_run_variables RELEASE_VERSION=$( ./normalizeReleaseVersion.sh {{gitBranch}} )
             - pushd template
             - on_start
