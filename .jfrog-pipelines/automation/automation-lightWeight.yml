@@ -3,6 +3,1322 @@ valuesFilePath: ../values.yml
 
 pipelines:
 
+  - name: iTest
+    configuration:
+      chronological: true
+      nodePool: pipelines_testing
+      inputResources:
+        - name: ubuntu_18_static_vm
+          trigger: false
+        - name: ubuntu_20_static_vm
+          trigger: false
+        - name: redhat_7_static_vm
+          trigger: false
+        - name: centos_7_static_vm
+          trigger: false
+        - name: itestNonScm
+        - name: cpGit
+          trigger: false
+      environmentVariables:
+        readOnly:
+          #set this env to true to delete the Conf.json file
+          removeConfFile: "false"
+          confFileName: conf.json
+          SKIP_NPM_INSTALL:
+            description: "Skip npm install for faster setup"
+            default: "false"
+            allowCustom: true
+          exitCode: "1"
+          LOG_LEVEL: "debug"
+          JPD_URL: "$res_itestNonScm_URL"
+          JFROG_ARTIFACTORY_USER: "admin"
+          JFROG_ADMIN_ARTIFACTORY_PASSWORD: "$res_itestNonScm_JPD_PASSWORD"
+          JFROG_ARTIFACTORY_APIKEY: "$res_itestNonScm_JPD_PASSWORD"
+          GITHUB_TOKEN: "${int_s_gitHub_token}"
+          GITHUB_URL: "${int_test_automation_token_GITHUB_URL}"
+          JFROG_JOIN_KEY: "$res_itestNonScm_JPD_JOIN_KEY"
+          DEFAULT_NODE_POOL_NAME:
+            allowCustom: true
+            default: u18dynamic
+            description: "Default nodePool"
+          #by default this is set to node pool with name `u16dynamic`
+          gitUser: "PIPA"
+          PREP_BUILDNODES: "true"
+          DEFAULT_UBUNTU_NODEPOOL_OS:
+            allowCustom: true
+            default: "Ubuntu_18.04"
+            description: "Default operating system for node pool tests"
+          DEFAULT_NODEPOOL_NUMBEROFNODES:
+            allowCustom: true
+            default: 100
+            description: "Default number of nodes for node pool tests"
+          DEFAULT_NODEPOOL_REGION:
+            allowCustom: true
+            default: "ap-south-1"
+            description: "Default region for node pool tests"
+          DEFAULT_AZURE_NODEPOOL_REGION:
+            allowCustom: true
+            default: "westus"
+            description: "Default region for azure node pool tests"
+          DEFAULT_GCP_NODEPOOL_REGION:
+            allowCustom: true
+            default: "us-west1"
+            description: "Default region for gcp node pool tests"
+          DEFAULT_NODEPOOL_ARCHITECTURE:
+            allowCustom: true
+            default: "x86_64"
+            description: "Default architecture for node pool tests"
+          DEFAULT_NODEPOOL_NODEIDLEINTERVAL:
+            allowCustom: true
+            default: 1
+            description: "Default node interval(in min) for node pool tests"
+          DEFAULT_NODEPOOL_DISKSIZE:
+            allowCustom: true
+            default: 90
+            description: "Default disk size for node pool tests"
+          DEFAULT_NODEPOOL_TIMEOUT:
+            allowCustom: true
+            default: 30000
+            description: "Default timeout(in sec) for node pool tests"
+          DEFAULT_WINDOWS_NODEPOOL_OS:
+            allowCustom: true
+            default: "WindowsServer_2019"
+          AWS_NODEPOOL_KEYPAIRNAME:
+            description: "AWS key-pair"
+            default: "dev2cloud-pp-aps1-nodepool"
+            allowCustom: true
+          AWS_NODEPOOL_SECOND_KEYPAIRNAME:
+            description: "AWS second key-pair"
+            default: "pipetesting003-eu-central-1"
+            allowCustom: true
+          AWS_NODEPOOL_SUBNETID:
+            description: "Default AWS subnet-id"
+            default: "subnet-0cdfebd1890e2967a"
+            allowCustom: true
+          AWS_NODEPOOL_SECOND_SUBNETID:
+            description: "second AWS subnet-id"
+            default: "subnet-050a07ea2f5cbee1c"
+            allowCustom: true
+          AWS_NODEPOOL_INSTANCESIZE:
+            description: "Default AWS instance-size"
+            default: "t3a.medium"
+            allowCustom: true
+          AWS_NODEPOOL_WIN_19_INSTANCESIZE:
+            description: "Default AWS instance-size"
+            default: "t3a.medium"
+            allowCustom: true
+          AWS_NODEPOOL_SECURITYGROUPID:
+            description: " Default AWS security group-id"
+            default: "sg-04d78bcf2e81c95a0"
+            allowCustom: true
+          AWS_NODEPOOL_SECOND_SECURITYGROUPID:
+            description: " second AWS security group-id"
+            default: "sg-0ea095851df05843e"
+            allowCustom: true
+          AWS_PROJECT_INTEGRATION_ACCESSKEYID:
+            description: "Default AWS access key-id"
+            default: "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}"
+            values:
+              - "${int_test_automation_token_AWS_DEV2CLOUD_ACCESSKEYID}"
+              - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_ACCESSKEYID}"
+            allowCustom: true
+          AWS_PROJECT_INTEGRATION_SECRETACCESSKEY:
+            description: "Default AWS ecret access-key"
+            default: "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
+            values:
+              - "${int_test_automation_token_AWS_DEV2CLOUD_SECRETACCESSKEY}"
+              - "${int_test_automation_token_AWS_PROJECT_INTEGRATION_SECRETACCESSKEY}"
+            allowCustom: true
+          D_AZUREKEYS_PROJECT_INTEGRATION_APPID:
+            description: "Default Azure app-id"
+            default: "192757c5-73a6-4257-84ec-1fe4c30f98fb"
+            allowCustom: true
+          D_AZUREKEYS_PROJECT_INTEGRATION_PASSWORD:
+            description: "Default Azure password"
+            default: "${int_az_jfrog_new_password}"
+            allowCustom: true
+          D_AZUREKEYS_PROJECT_INTEGRATION_TENANT:
+            description: "Default Azure tenant key"
+            default: "ad8b5a8c-9862-4c41-a341-aa838fc564df"
+            allowCustom: true
+          AZURE_NODEPOOL_SUBSCRIPTIONID:
+            allowCustom: true
+            default: "f27d81be-eea4-479e-a745-11088b8cc1b0"
+            description: "Default Azure subscription-id"
+          AZURE_NODEPOOL_RESOURCEGROUPNAME:
+            allowCustom: true
+            default: "pipelines-bp-westus"
+            description: "Default Azure resource group name"
+          AZURE_NODEPOOL_VNETNAME:
+            allowCustom: true
+            default: "pipelines-bp-westus"
+            description: "Default Azure vnetname"
+          AZURE_NODEPOOL_SUBNETNAME:
+            allowCustom: true
+            default: "pipelines-bp-westus"
+            description: "Default Azure subnet name"
+          AZURE_NODEPOOL_PUBLICSSHKEY:
+            allowCustom: true
+            default: "\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCA0GPIdWfyEn21jkMhS8/JvoJ4viuPmnBhuazjwUbilM3zO38hQc8nr8eW0zJS/zpf2V9QewpJ1t9x5tw4bdTRMN99aaIbqr6ZSz/1ofFL1PkpC9Y7HWi+dmpxlIqRkX6JGPaUNb2ql71vVPY0tLg2G4MgcX/ZFQCVO3z/o20HURgrcxYEu5A3+dOkyiE3JQBi+s66cgDm7p3IIND2eEHcZiIsaW6vg2T85oF8WkXcpHFLLXt5gzND6f/8TwW657QXe2P5mijWwTtCOaopfSK0vXC1dFzPPpwKGPTv7KrsTSPL3c/QP6YqEYratKpNTenmvGPGqYNFgj8oMIbVN2SP\""
+            description: "Default Azure public ssh-key"
+          AZURE_NODEPOOL_INSTANCESIZE:
+            allowCustom: true
+            default: "Standard_F2s"
+            description: "Default Azure instance size"
+          GCP_NODEPOOL_INSTANCESIZE:
+            allowCustom: true
+            default: "n1-standard-2"
+            description: "This variable is used to set default instance size for azure node pool"
+          GCP_NODEPOOL_SUBNET:
+            allowCustom: true
+            default: "jfrog-usw1-dynamicnodes"
+            description: "This variable is used to set default instance size for azure node pool"
+          GCP_NODEPOOL_NETWORK_TAGS:
+            allowCustom: true
+            default: "behind-nat,jenkins,pipelines,xray-app,xray-apps"
+            description: "This variable is used to set default instance size for azure node pool"
+          GCP_NODEPOOL_ZONE:
+            allowCustom: true
+            default: "us-west1-b"
+            description: "This variable is used to set default instance size for azure node pool"
+          D_GOOGLECLOUD_PROJECT_INTEGRATION_JSONKEY:
+            allowCustom: true
+            default: "${int_test_automation_gcp_jsonKey}"
+            description: "This variable is used to set default instance size for azure node pool"
+          KUBERNETES_NODEPOOL_STORAGECLASS:
+            allowCustom: true
+            default: "standard"
+            description: "This variable is used to set default storage class for kubernetes node pool"
+          KUBERNETES_NODEPOOL_NAMESPACE:
+            allowCustom: true
+            default: "pipe-master-pool"
+            description: "This variable is used to set default namespace for kubernetes node pool"
+          KUBERNETES_PROJECT_INTEGRATION_KUBECONFIG:
+            allowCustom: true
+            default: "${int_KubeFile_automation_kubeconfig}"
+            description: "This variable is used to set default kubeconfig for kubernetes node pool"
+          KUBERNETES_PROJECT_INTEGRATION_KUBECONFIG_PATH:
+            allowCustom: true
+            default: "${step_workspace_dir}/KubeFile_automation/config"
+            description: "This variable is used to set default kubeconfig for kubernetes node pool"
+          DONT_DELETE_PS:
+            description: "When run status reaches error status, pipeline source doesn't get deleted "
+            default: "true"
+            allowCustom: true
+          GREP:
+            description: "Only run tests matching this string"
+            default: "FLAKY"
+            allowCustom: true
+          INVERT:
+            description: "Skip all the tests matching the grep string. Accepts only true or false"
+            default: "true"
+            allowCustom: true
+          PREP_FOR_HELM_TESTS:
+            description: "Upload helm test files to artifactory for running helm test cases"
+            default: "true"
+            allowCustom: true
+          U18_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_ubuntu_18_static_vm_ip_address}"
+            description: "Ubuntu 18 static vm ip address"
+          U20_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_ubuntu_20_static_vm_ip_address}"
+            description: "Ubuntu 20 static vm ip address"
+          RHEL7_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_redhat_7_static_vm_ip_address}"
+            description: "Redhat 7 static vm ip address"
+          CENT7_STATIC_IP_ADDRESS:
+            allowCustom: false
+            default:  "${res_centos_7_static_vm_ip_address}"
+            description: "CentOS 7 static vm ip address"
+          SSH_USER:
+            allowCustom: false
+            default:  "automation"
+            description: "SSH user name in automation"
+          SSH_PRIVATE_KEY:
+            allowCustom: false
+            default:  "${int_automation_ssh_privateKey}"
+            description: "SSH private key value in automation"
+          AWS_NODEPOOL_CUSTOMTAG_KEYS:
+            description: "keys for custom tag to identify testing instances"
+            default: "pipelines-internal,Group"
+            allowCustom: true
+          AWS_NODEPOOL_CUSTOMTAG_VALUES:
+            description: "values for custom tag to identify testing instances"
+            default: "testing,PIPELINES"
+            allowCustom: true
+          BITBUCKET_SERVER_PASSWORD:
+            description: "BBS password"
+            default: "${int_test_automation_bbs_new_password}"
+            allowCustom: true
+          BITBUCKET_SERVER_URL:
+            description: "BBS url"
+            default: "${int_test_automation_bbs_new_url}"
+            allowCustom: true
+          BITBUCKET_SERVER_USERNAME:
+            description: "BBS username"
+            default: "${int_test_automation_bbs_new_username}"
+            allowCustom: true
+          GITHUB_REPOSITORY_BRANCH: "master"
+          GITHUB_REPOSITORY_FULLPATH_BASH: "jfrog/Org_test_Automation_bash"
+          GITHUB_REPOSITORY_FULLPATH_POWERSHELL: "jfrog/Org_test_Automation_PowerShell"
+          MULTIBRANCH_REPOSITORY_FULL_NAME: "PIPA/org_test_automation_MultiBranch"
+          GITHUB_REPOSITORY_FULLPATH_BASH_BRANCH: "master"
+          EMPTY_REPOSITORY_FULL_NAME : "PIPA/Org_test_Automation_empty"
+          EXTENSIONS_REPOSITORY_FULL_NAME : "PIPA/extensions"
+          TEMPLATES_REPOSITORY_FULL_NAME : "PIPA/templates"
+          GITHUB_REPOSITORY_FULLPATH: "jfrog/Org_test_Automation"
+          GITHUB_MULTIBRANCH_REPOSITORY_FULL_NAME: "jfrog/org_test_automation_MultiBranch"
+      integrations:
+        - name: test_automation
+        - name: test_automation_token
+        - name: KubeFile_automation
+        - name: lightweight_automation_generic
+        - name: automation_ssh
+        - name: itest_github
+        - name: entplus_deployer
+        - name: pipelines_itest_slack
+        - name: pipelines_mqtest_slack
+        - name: test_automation_bbs_new
+        - name: s_gitHub
+    steps:
+      - name: setup_PreMatrix
+        type: PreMatrix
+        configuration:
+          runtime:
+            type: image
+            image:
+              auto:
+                language: node
+                versions:
+                  - "16"
+          integrations:
+            - name: entArt
+            - name: az_jfrog_new
+            - name: test_automation_gcp
+          inputResources:
+            - name: auto_gitRepo
+              trigger: false
+            - name: Org_test_Automation_BBS
+              trigger: false
+            - name: Org_test_Automation_bash_BBS
+              trigger: false
+            - name: Org_test_Automation_PowerShell_BBS
+              trigger: false
+            - name: automation_templateFS
+              trigger: false
+            - name: triggerLightWeightAutomation
+              trigger: false
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            listOfTests: "core/api/systemCodes.js"
+        execution:
+          onStart:
+            - echo ${int_test_automation_bbs_new_url}
+            - echo ${BITBUCKET_SERVER_URL}
+            - node -v
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - cp -r $res_auto_gitRepo_resourcePath/automation/tests .
+            - pushd tests
+            - cp -r $res_Org_test_Automation_BBS_resourcePath .
+            - cp -r $res_Org_test_Automation_bash_BBS_resourcePath .
+            - cp -r $res_Org_test_Automation_PowerShell_BBS_resourcePath .
+            - ls -la
+            - cp -r $res_automation_templateFS_resourcePath .
+            - restore_pipeline_files jsonfile $confFileName
+            - if [[ -f "$confFileName" ]]; then jsonfile=true && cat $confFileName; fi
+            - if ( $jsonfile && $removeConfFile ); then echo "removing confFileName" && rm -rf $confFileName; fi
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - sudo chmod 0777 $TEMPLATE_BINARY_PATH
+            - export testCases=$listOfTests
+            - mkdir -p /tmp/npm_cache
+            - restore_pipeline_files npm_cache /tmp/npm_cache/
+            - jfrog rt npmc --server-id-resolve entArt --repo-resolve npm-virtual
+            - jfrog rt npmci
+            - add_pipeline_files /tmp/npm_cache npm_cache
+            - ./test.sh
+            - popd
+            - rm -rf $res_auto_gitRepo_resourcePath
+            - rm -rf $res_Org_test_Automation_BBS_resourcePath
+            - rm -rf $res_Org_test_Automation_bash_BBS_resourcePath
+            - rm -rf $res_Org_test_Automation_PowerShell_BBS_resourcePath
+
+      - name: bash_tests_1
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/steps/Bash/BashIntegrations/BashArtifactoryIntegration.js"
+            - listOfTests: "core/steps/Bash/BashIntegrations/BashAWSIntegration.js"
+            - listOfTests: "core/steps/Bash/BashIntegrations/BashDockerIntegration.js"
+            - listOfTests: "core/steps/Bash/BashIntegrations/BashGenericIntegration.js"
+            - listOfTests: "core/steps/Bash/BashIntegrations/BashGitHubIntegration.js"
+            - listOfTests: "core/steps/Bash/BashIntegrations/BashGoogleCloudIntegration.js"
+            - listOfTests: "core/steps/Bash/BashIntegrations/BashPagerDutyIntegration.js"
+            - listOfTests: "core/steps/Bash/BashIntegrations/BashSlackIntegration.js"
+            - listOfTests: "core/steps/Bash/BashIntegrations/BashJFrogPlatformIntegration.js"
+            - listOfTests: "core/steps/Bash/BashResources/BashAql.js"
+            - listOfTests: "core/steps/Bash/BashResources/BashBuildInfo.js"
+            - listOfTests: "core/steps/Bash/BashResources/BashFileSpec.js"
+            - listOfTests: "core/steps/Bash/BashResources/BashGitRepo.js"
+            - listOfTests: "core/steps/Bash/BashResources/BashImage.js"
+            - listOfTests: "core/steps/Bash/BashResources/BashPropertyBag.js"
+            - listOfTests: "core/steps/Bash/BashResources/BashResources.js"
+            - listOfTests: "core/steps/Bash/BashNative/Jenkins.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation_bash"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: bash_tests_2
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/steps/Bash/BashGeneric/approvalGates.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashMac.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/buildInfoUrl.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/consoleLogStreaming.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/environmentVariables.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashGenericSync.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/heartbeat.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/Tasks.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation_bash"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: bash_tests_3
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsEndStep.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsFindConfiguration.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsGitRepo.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsJFrogCLI.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsRunDescription.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsRunVariables.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsSaveArtifactInfo.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsSendNotification.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsState.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsTestReports.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsTriggerPayload.js"
+            - listOfTests: "core/steps/Bash/BashUtilityFunctions/UtilityFunctionsWriteOutput.js"
+            - listOfTests: "core/steps/Bash/BashNative/Matrix1.js"
+            - listOfTests: "core/steps/Bash/BashNative/Matrix2.js"
+            - listOfTests: "core/steps/Bash/BashNative/Matrix3.js"
+            - listOfTests: "core/steps/Bash/BashNative/Matrix4.js"
+            - listOfTests: "core/steps/Bash/BashNative/Matrix5.js"
+            - listOfTests: "core/steps/Bash/BashNative/MatrixSync.js"
+            - listOfTests: "core/steps/Matrix/*.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashGeneric.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashGenericExecutionScripts.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashGenericRuntimeImage.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashGenericRunTrigger.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashGenericStepletStatus.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashGenericTestElements.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashGeneric13.js"
+            - listOfTests: "core/steps/Bash/BashGeneric/BashGenericKubernetes.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation_bash"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: step_sync_tests
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/steps/Sync/HelmBlueGreenCleanup.js"
+            - listOfTests: "core/steps/Sync/HelmBlueGreenDeploy.js"
+            - listOfTests: "core/steps/Sync/HelmBlueGreenRoleSwitch.js"
+            - listOfTests: "core/steps/Sync/UploadArtifact.js"
+            - listOfTests: "core/steps/Sync/TriggerPipeline.js"
+            - listOfTests: "core/steps/Sync/Tasks.js"
+
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: ps_tests_1
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/consoleLogStreaming.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Sync/PowerShellGeneric.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/PowerShellGeneric.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/PowerShellGenericArtifactInfo.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/PowerShellGenericEnvironmentVariables.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/PowerShellGenericExecutionScripts.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/PowerShellGenericRuntime.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/PowerShellGenericRunTrigger.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/PowerShellGenericStepletStatus.js"
+            - listOfTests: "core/steps/PowerShell/PSGeneric/Trigger/Tasks.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellAirbrakeIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellArtifactoryIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellAWSIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellAzureKeysIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellBitbucketIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellBitBucketServerIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellDigitalOceanIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellDistributionIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellDockerIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellFileServerIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellGenericIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellJFrogPlatformIntegration.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation_PowerShell"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: ps_tests_2
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellSSHKeyIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellGitHubEnterpriseIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellGitHubIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellGitLabIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellGoogleCloudIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellIncomingWebhookIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellJenkinsIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellJiraIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellKubernetesIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellNewRelicIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellOutgoingWebhookIntegration.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation_PowerShell"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: ps_tests_3
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSPipeStateUntilityFunctions.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSRunStateUtilityFunction.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSAffinityGroupStateUtilityFunction.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSRunVariables.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctions.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsBumpSemver.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsCheckXray.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsEndStep.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsFindConfiguration.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsGitRepo.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsReplicateResource.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsSaveTests.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsSendNotification.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsUpdateRunDescription.js"
+            - listOfTests: "core/steps/PowerShell/PSUtilityfunctions/PSUtilityFunctionsWriteOutput.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellPagerDutyIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellPemKeyIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellSlackIntegration.js"
+            - listOfTests: "core/steps/PowerShell/PSIntegration/PowerShellSMTPIntegration.js"
+
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation_PowerShell"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: nodepools_tests
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests:  "core/nodePools/AWSDynamicNodes/c7Dynamicnode.js"
+            - listOfTests:  "core/nodePools/AWSDynamicNodes/u18DynamicNode.js"
+            - listOfTests:  "core/nodePools/AWSDynamicNodes/u20DynamicNode.js"
+            - listOfTests:  "core/nodePools/AWSDynamicNodes/w19DynamicNodes1.js"
+            - listOfTests:  "core/nodePools/AWSDynamicNodes/w19DynamicNodes2.js"
+            - listOfTests:  "core/nodePools/AZDynamicNodes/c7DynamicNode.js"
+            - listOfTests:  "core/nodePools/AZDynamicNodes/u18DynamicNode.js"
+            - listOfTests:  "core/nodePools/AZDynamicNodes/u20DynamicNode.js"
+            - listOfTests:  "core/nodePools/AZDynamicNodes/w19DynamicNodes.js"
+            - listOfTests:  "core/nodePools/GCPDynamicNodes/c7DynamicNode.js"
+            - listOfTests:  "core/nodePools/GCPDynamicNodes/u18DynamicNode.js"
+            - listOfTests:  "core/nodePools/GCPDynamicNodes/u20DynamicNode.js"
+            # - listOfTests:  "core/nodePools/K8sDynamicNodes/c7DynamicNode.js"
+            # - listOfTests:  "core/nodePools/K8sDynamicNodes/k8sGenericNode.js"
+            # - listOfTests:  "core/nodePools/K8sDynamicNodes/u18DynamicNode.js"
+            # - listOfTests:  "core/nodePools/K8sDynamicNodes/u20DynamicNode.js"
+            - listOfTests:  "core/nodePools/K8sDynamicNodes/k8sDynamicNodePool1.js"
+            - listOfTests:  "core/nodePools/AWSDynamicNodePools.js"
+            # - listOfTests:  "core/nodePools/AzureDynamicNodePools.js"
+            - listOfTests:  "core/nodePools/dynamicAWSnode.js"
+            # - listOfTests:  "core/nodePools/dynamicGCPNodePools.js"
+            # - listOfTests:  "core/nodePools/dynamicKubernetesNodePools.js"
+            - listOfTests:  "core/nodePools/GenericNodePools.js"
+            - listOfTests:  "core/nodePools/staticNodes/u18static.js"
+            - listOfTests:  "core/nodePools/staticNodes/u20static.js"
+            - listOfTests:  "core/nodePools/staticNodes/cent7static.js"
+            - listOfTests:  "core/nodePools/staticNodes/rhel7static.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: workflow_tests
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/workFlow/pipeline/sync/pipelineWorkFlowSync.js"
+            - listOfTests: "core/workFlow/pipeline/trigger/pipelineWorkFlow5.js"
+            - listOfTests: "core/workFlow/pipeline/trigger/pipelineWorkFlow6.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: workflow_tests_1
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/workFlow/step/conditionalWorkflow.js"
+            - listOfTests: "core/workFlow/step/conditionalWorkflow1.js"
+            - listOfTests: "core/workFlow/step/conditionalWorkflow2.js"
+            - listOfTests: "core/workFlow/step/nodeCleanup.js"
+            - listOfTests: "core/workFlow/step/signedPipelines.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow1.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow2.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow12.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow13.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow14.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow23.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow24.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow25.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow26.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow27.js"
+            - listOfTests: "core/workFlow/step/stepWorkflow29.js"
+            - listOfTests: "core/workFlow/step/triggerPipelineWorkflow.js"
+            - listOfTests: "core/workFlow/environments/environmentWorkflow.js"
+            - listOfTests: "core/workFlow/environments/globalAndProjectEnvironmentVariables.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: resource_tests
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/resources/Aql.js"
+            - listOfTests: "core/resources/BuildInfo.js"
+            - listOfTests: "core/resources/FileSpec.js"
+            - listOfTests: "core/resources/GitRepo.js"
+            - listOfTests: "core/resources/HelmChart.js"
+            - listOfTests: "core/resources/Image.js"
+            - listOfTests: "core/resources/PropertyBag.js"
+            - listOfTests: "core/resources/ReleaseBundle.js"
+            - listOfTests: "core/resources/RemoteFile.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: projectIntegration_tests
+        type: Matrix
+        stepMode: Bash
+        configuration:
+          multiNode: true
+          runtime:
+            type: host
+          environmentVariables:
+            SKIP_GLOBAL_TEARDOWN: "true"
+            SKIP_SETUP: "true"
+          nodePool: pipelines_testing
+          outputResources:
+            - name: list_grep_resource
+          inputSteps:
+            - name: setup_PreMatrix
+          integrations:
+            - name: entArt
+        stepletMultipliers:
+          environmentVariables:
+            - listOfTests: "core/projectIntegrations/Airbrake.js"
+            - listOfTests: "core/projectIntegrations/Artifactory.js"
+            - listOfTests: "core/projectIntegrations/AWS.js"
+            - listOfTests: "core/projectIntegrations/AzureKeys.js"
+            - listOfTests: "core/projectIntegrations/Bitbucket.js"
+            - listOfTests: "core/projectIntegrations/BitBucketServer.js"
+            - listOfTests: "core/projectIntegrations/DigitalOcean.js"
+            - listOfTests: "core/projectIntegrations/Distribute.js"
+            - listOfTests: "core/projectIntegrations/DockerRegistry.js"
+            - listOfTests: "core/projectIntegrations/dynamicAWS.js"
+            - listOfTests: "core/projectIntegrations/DynamicAzure.js"
+            - listOfTests: "core/projectIntegrations/dynamicGoogleCloud.js"
+            - listOfTests: "core/projectIntegrations/dynamicKubernetes.js"
+            - listOfTests: "core/projectIntegrations/FileServer.js"
+            - listOfTests: "core/projectIntegrations/Generic.js"
+            - listOfTests: "core/projectIntegrations/Generictests.js"
+            - listOfTests: "core/projectIntegrations/GitHub.js"
+            - listOfTests: "core/projectIntegrations/GitHubEnterprise.js"
+            - listOfTests: "core/projectIntegrations/GitLab.js"
+            - listOfTests: "core/projectIntegrations/GoogleCloud.js"
+            - listOfTests: "core/projectIntegrations/IncomingWebhook.js"
+            - listOfTests: "core/projectIntegrations/Jenkins.js"
+            - listOfTests: "core/projectIntegrations/Jira.js"
+            - listOfTests: "core/projectIntegrations/Kubernetes.js"
+            - listOfTests: "core/projectIntegrations/NewRelic.js"
+            - listOfTests: "core/projectIntegrations/OutgoingWebhook.js"
+            - listOfTests: "core/projectIntegrations/PagerDutyEvents.js"
+            - listOfTests: "core/projectIntegrations/PemKey.js"
+            - listOfTests: "core/projectIntegrations/Slack.js"
+            - listOfTests: "core/projectIntegrations/SMTP.js"
+            - listOfTests: "core/projectIntegrations/SSHkey.js"
+        execution:
+          onExecute:
+            # - rm -rf $LOCAL_STATE_FILE_PATH && touch $LOCAL_STATE_FILE_PATH
+            - echo "Executing matrix step on ${steplet_id}"
+            - testPath=setup_PreMatrix/tests
+            - pushd $testPath
+            - ls -al
+            - export REPOSITORY_FULL_NAME=$gitUser"/Org_test_Automation"
+            - export REPOSITORY_BRANCH="master"
+            - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
+            - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
+            - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
+            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - export testCases=$listOfTests
+            - ./test.sh
+          onFailure:
+            - sudo chmod +x ./_common/state/pipelines/reports/onFailureTestLogs.sh
+            - ./_common/state/pipelines/reports/onFailureTestLogs.sh ${res_cpGit_resourcePath} ${builder_api_token}
+          onComplete:
+            - mv mochawesome-report/mochawesome.html mochawesome-${steplet_id}.html
+            - cat $confFileName
+            - popd
+            - add_run_files $testPath/testResults report_${steplet_id}
+            - cp -r $testPath/testResults .
+            - cp $testPath/token.json .
+            - cp -r $testPath/mochawesome-report .
+            - rm -rf setup_PreMatrix
+            - save_tests testResults/mocha-junit-reporter
+
+      - name: tearDown_tests_PostMatrix
+        type: PostMatrix
+        configuration:
+          runtime:
+            type: host
+          integrations:
+            - name: entArt
+          inputResources:
+            - name: auto_gitRepo
+              trigger: false
+          outputResources:
+            - name: iTestReleaseApprovalBag
+          inputSteps:
+            - name: bash_tests_1
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: bash_tests_2
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: bash_tests_3
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: step_sync_tests
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: ps_tests_1
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: ps_tests_2
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: nodepools_tests
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: workflow_tests
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: workflow_tests_1
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: ps_tests_3
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: resource_tests
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+            - name: projectIntegration_tests
+              status:
+                - failure
+                - success
+                - skipped
+                - cancelled
+                - error
+                - timeout
+        execution:
+          onComplete:
+            - write_output iTestReleaseApprovalBag APPROVAL_STATUS='REQUESTING_APPROVAL_FOR_RELEASE_PIPELINES'
+            - mkdir result-${run_id}
+            - save_tests ./bash_tests_1/testResults/mocha-junit-reporter
+            - mv ./bash_tests_1/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./bash_tests_2/testResults/mocha-junit-reporter
+            - mv ./bash_tests_2/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./bash_tests_3/testResults/mocha-junit-reporter
+            - mv ./bash_tests_3/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./step_sync_tests/testResults/mocha-junit-reporter
+            - mv ./step_sync_tests/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./ps_tests_1/testResults/mocha-junit-reporter
+            - mv ./ps_tests_1/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./ps_tests_2/testResults/mocha-junit-reporter
+            - mv ./ps_tests_2/testResults/mochawesome/*.json result-${run_id}/
+            # - save_tests ./basic_tests/testResults/mocha-junit-reporter
+            - save_tests ./nodepools_tests/testResults/mocha-junit-reporter
+            - mv ./nodepools_tests/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./workflow_tests/testResults/mocha-junit-reporter
+            - mv ./workflow_tests/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./workflow_tests_1/testResults/mocha-junit-reporter
+            - mv ./workflow_tests_1/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./ps_tests_3/testResults/mocha-junit-reporter
+            - mv ./ps_tests_3/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./resource_tests/testResults/mocha-junit-reporter
+            - mv ./resource_tests/testResults/mochawesome/*.json result-${run_id}/
+            - save_tests ./projectIntegration_tests/testResults/mocha-junit-reporter
+            - mv ./projectIntegration_tests/testResults/mochawesome/*.json result-${run_id}/
+            - add_pipeline_files result-${run_id} result-${run_id}
+            - pushd $res_auto_gitRepo_resourcePath/automation/tests
+            - mkdir -p /tmp/npm_cache
+            - restore_pipeline_files npm_cache /tmp/npm_cache/
+            - jfrog rt npmc --server-id-resolve entArt --repo-resolve npm-virtual
+            - jfrog rt npmci
+            - add_pipeline_files /tmp/npm_cache npm_cache
+            - ./test.sh
+            - restore_pipeline_files result-${run_id} result_itest
+            - ls -la
+            - npm run merge-json-reports && npm run merge-html-reports
+            - source pipelines_common.sh
+            - uploadResult="$(on_complete_itest_nonSCM)"
+            - reportPath=${uploadResult%%:*}
+            - reportLink="https://entplus.jfrog.io/artifactory/pipe-itest-reports/itest-non-SCM-reports/$reportPath"
+            - echo "${reportLink}"
+            - testResult="success"
+            - |
+              if [ "$step_bash_tests_1_statusName" != "success" ] || [ "$step_bash_tests_2_statusName" != "success" ] ||
+              if [ "$step_bash_tests_3_statusName" != "success" ] || [ "$step_step_sync_tests_statusName" != "success" ] ||
+              if [ "$step_ps_tests_1_statusName" != "success" ] || [ "$step_ps_tests_2_statusName" != "success" ] ||
+              if [ "$step_ps_tests_3_statusName" != "success" ] || [ "$step_nodepools_tests_statusName" != "success" ] ||
+              if [ "$step_workflow_tests_statusName" != "success" ] || [ "$step_workflow_tests_1_statusName" != "success" ] ||
+              if [ "$step_resource_tests_statusName" != "success" ] || [ "$step_projectIntegration_tests_statusName" != "success" ]
+                then
+                  testResult="failure"
+              fi
+            - colorBar="#00FF00"
+            - |
+              if [ "$testResult" == "failure" ]
+                then
+                  colorBar="#FF0000"
+              fi
+            {{ if hasSuffix "full" "{{gitBranch}}" }}
+            - send_notification pipelines_mqtest_slack --text "Pipeline - $pipeline_name | Step - $step_name \n Commit - $res_auto_gitRepo_commitSha $res_auto_gitRepo_commitMessage \n Branch - $res_auto_gitRepo_branchName \n URL - $step_url \n Link to report - ${reportLink}" --color "$colorBar"
+            {{ end }}
+            {{ if eq "master" "{{gitBranch}}" }}
+            - send_notification pipelines_itest_slack --text "Pipeline - $pipeline_name | Step - $step_name \n Commit - $res_auto_gitRepo_commitSha $res_auto_gitRepo_commitMessage \n Branch - $res_auto_gitRepo_branchName \n URL - $step_url \n Link to report - ${reportLink}" --color "$colorBar"
+            {{ end }}
+
+
 {{ if or (eq "master" "{{gitBranch}}") (hasPrefix "preRelease" "{{gitBranch}}") (hasPrefix "milestone" "{{gitBranch}}") (hasSuffix "full" "{{gitBranch}}") }}
   - name: scm_itest
     configuration:
