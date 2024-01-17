@@ -71,13 +71,13 @@ resources:
       branches:
         include: ^master$
 
-  - name: automation_templateFS
-    type: FileSpec
-    configuration:
-      sourceArtifactory: entArt
-      pattern: "pipelines-artifacts/template/pipelines-template-*-linux-amd64"
-      props: vcs.branch={{gitBranch}}
-      flat: true
+  # - name: automation_templateFS
+  #   type: FileSpec
+  #   configuration:
+  #     sourceArtifactory: entArt
+  #     pattern: "pipelines-artifacts/template/pipelines-template-*-linux-amd64"
+  #     props: vcs.branch={{gitBranch}}
+  #     flat: true
 
   - name: automation_templateFS_master
     type: FileSpec
