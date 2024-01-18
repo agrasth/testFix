@@ -429,13 +429,6 @@ resources:
       files:
         include: \btemplate\/.+\b
 
-  - name: itestNonScm
-    type: PropertyBag
-    configuration:
-      URL: ""
-      JPD_JOIN_KEY: ""
-      JPD_PASSWORD: ""
-
   - name: templateFS
     type: FileSpec
     configuration:
@@ -650,10 +643,10 @@ resources:
       flat: true
 
   {{ if hasPrefix "master" "{{gitBranch}}" }}
-  - name: customEnvVersionWH
-    type: IncomingWebhook
-    configuration:
-      webhookName: customCertTrigger
+  # - name: customEnvVersionWH
+  #   type: IncomingWebhook
+  #   configuration:
+  #     webhookName: customCertTrigger
 
   - name: platformChart
     type: HelmChart
