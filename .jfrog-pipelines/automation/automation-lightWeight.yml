@@ -307,8 +307,8 @@ pipelines:
               trigger: false
             - name: Org_test_Automation_PowerShell_BBS
               trigger: false
-            # - name: automation_templateFS
-            #   trigger: false
+            - name: automation_templateFS
+              trigger: false
             - name: triggerLightWeightAutomation
               trigger: false
           environmentVariables:
@@ -326,7 +326,7 @@ pipelines:
             - cp -r $res_Org_test_Automation_bash_BBS_resourcePath .
             - cp -r $res_Org_test_Automation_PowerShell_BBS_resourcePath .
             - ls -la
-            # - cp -r $res_automation_templateFS_resourcePath .
+            - cp -r $res_automation_templateFS_resourcePath .
             - restore_pipeline_files jsonfile $confFileName
             - if [[ -f "$confFileName" ]]; then jsonfile=true && cat $confFileName; fi
             - if ( $jsonfile && $removeConfFile ); then echo "removing confFileName" && rm -rf $confFileName; fi
@@ -335,9 +335,9 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
-            # - sudo chmod 0777 $TEMPLATE_BINARY_PATH
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - sudo chmod 0777 $TEMPLATE_BINARY_PATH
             - export testCases=$listOfTests
             - mkdir -p /tmp/npm_cache
             - restore_pipeline_files npm_cache /tmp/npm_cache/
@@ -399,8 +399,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -456,8 +456,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -532,8 +532,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -588,8 +588,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -659,8 +659,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -719,8 +719,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -788,8 +788,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -864,8 +864,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -916,8 +916,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -984,8 +984,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
@@ -1122,8 +1122,8 @@ pipelines:
             - export ORG_TEST_AUTOMATION_DIRECTORY="./Org_test_Automation_BBS"
             - export ORG_TEST_AUTOMATION_BASH_DIRECTORY="./Org_test_Automation_bash_BBS"
             - export ORG_TEST_AUTOMATION_POWERSHELL_DIRECTORY="./Org_test_Automation_PowerShell_BBS"
-            # - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
-            # - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
+            - templateFileName="$(ls ./automation_templateFS | grep pipelines-template)"
+            - export TEMPLATE_BINARY_PATH="./automation_templateFS/${templateFileName}"
             - export testCases=$listOfTests
             - ./test.sh
           onFailure:
